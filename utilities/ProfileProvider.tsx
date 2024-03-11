@@ -4,7 +4,6 @@ import { supabase } from "./Supabase";
 import { View } from "react-native";
 import Profile from "../objects/Profile";
 import Conversation from "../objects/Conversation";
-import { Audio } from "expo-av";
 import { registerForPushNotificationsAsync } from "./Onesignal";
 
 const ProfileContext = createContext<{
@@ -138,6 +137,8 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (!error) {
       getProfile();
+    } else {
+      console.error("Error saving profile:", error);
     }
   };
 

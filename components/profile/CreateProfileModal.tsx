@@ -27,7 +27,7 @@ import { useProfile } from "../../utilities/ProfileProvider";
 
 const CreateProfileModal = () => {
   const { appReady, user, profile, saveProfile, getProfile } = useProfile();
-  const uid = user?.id || "";
+  const uid = user?.id;
   const email = user?.email! || "";
 
   const [profileImage, setProfileImage] = useState(
@@ -106,7 +106,7 @@ const CreateProfileModal = () => {
       .upload(fileName, buffer, { contentType: "image/png" });
 
     if (error) {
-      console.error("Error uploading profile image:", error.message);
+      console.error("Error uploading profile image:", error.message, error);
       saveProfile(
         new Profile(uid, profileImage, firstName, lastName, email, [])
       );
@@ -117,6 +117,7 @@ const CreateProfileModal = () => {
         .from("profile_images")
         .getPublicUrl(fileName).data.publicUrl;
 
+      console.log(publicUrl);
       return publicUrl;
     }
   };

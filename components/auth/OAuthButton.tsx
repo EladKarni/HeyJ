@@ -1,10 +1,6 @@
 import * as React from "react";
 import { TouchableOpacity, Image, StyleSheet } from "react-native";
-import {
-  signInWithApple,
-  signInWithFacebook,
-  signInWithGoogle,
-} from "../../utilities/AuthHelper";
+import { signInWithApple, signInWithGoogle } from "../../utilities/AuthHelper";
 
 type OAuthButtonType = "google" | "apple" | "facebook";
 
@@ -30,16 +26,6 @@ const OAuthButton = ({ type }: OAuthButtonProps) => {
           <Image
             style={styles.logo}
             source={require("../../assets/apple-logo.png")}
-          />
-        </TouchableOpacity>
-      );
-
-    case "facebook":
-      return (
-        <TouchableOpacity style={styles.button} onPress={signInWithFacebook}>
-          <Image
-            style={styles.logo}
-            source={require("../../assets/facebook-logo.png")}
           />
         </TouchableOpacity>
       );

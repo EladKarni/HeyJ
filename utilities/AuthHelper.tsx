@@ -20,7 +20,7 @@ const createSessionFromUrl = async (url: string) => {
   return data.session;
 };
 
-const redirectUrl = makeRedirectUri({ scheme: "myapp" });
+const redirectUrl = makeRedirectUri({ scheme: "heyj" });
 
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -62,26 +62,4 @@ export const signInWithApple = async () => {
       await createSessionFromUrl(url);
     }
   }
-};
-
-export const signInWithFacebook = async () => {
-  Alert.alert("Uh oh!", "This feature is not enabled yet.");
-  // const { data, error } = await supabase.auth.signInWithOAuth({
-  //   provider: "facebook",
-  //   options: {
-  //     redirectTo: redirectUrl,
-  //     skipBrowserRedirect: true,
-  //   },
-  // });
-
-  // if (data.url) {
-  //   const result = await WebBrowser.openAuthSessionAsync(
-  //     data?.url ?? "",
-  //     redirectUrl
-  //   );
-  //   if (result.type === "success") {
-  //     const { url } = result;
-  //     await createSessionFromUrl(url);
-  //   }
-  // }
 };
