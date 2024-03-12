@@ -8,8 +8,8 @@ node_modules/
 dist/
 web-build/
 
-# android
-# ios
+android
+ios
 
 
 # Native
