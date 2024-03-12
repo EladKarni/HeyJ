@@ -20,7 +20,7 @@ const createSessionFromUrl = async (url: string) => {
   return data.session;
 };
 
-const redirectUrl = makeRedirectUri({ scheme: "heyj" });
+const redirectUrl = makeRedirectUri({ scheme: "myapp" });
 
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
