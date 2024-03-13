@@ -29,12 +29,14 @@
     "expo-linking": "~5.0.2",
     "expo-modules-core": "^1.5.12",
     "expo-sharing": "~11.5.0",
+    "expo-splash-screen": "~0.20.5",
     "expo-status-bar": "~1.6.0",
     "expo-updates": "~0.18.18",
     "expo-web-browser": "~12.3.2",
     "install": "^0.13.0",
     "lodash": "^4.17.21",
     "npm": "^10.2.5",
+    "onesignal-expo-plugin": "^2.0.2",
     "react": "18.2.0",
     "react-native": "0.72.6",
     "react-native-dropdown-picker": "^5.4.6",
@@ -49,8 +51,7 @@
     "react-native-vector-icons": "^10.0.3",
     "react-native-view-shot": "3.7.0",
     "react-qr-code": "^2.0.12",
-    "rn-qr-generator": "^1.4.0",
-    "expo-splash-screen": "~0.20.5"
+    "rn-qr-generator": "^1.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

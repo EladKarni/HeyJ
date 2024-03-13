@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "heyj",
+    "scheme": "myapp",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -63,12 +63,19 @@
         {
           "photosPermission": "The app accesses your photos."
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
     ],
     "extra": {
       "eas": {
         "projectId": "425b4502-a4b9-4fe6-a2ea-ca4129daa0dc"
-      }
+      },
+      "oneSignalAppId": "1d79c718-998c-49d0-89cb-37c5ea140309"
     }
   }
 }
