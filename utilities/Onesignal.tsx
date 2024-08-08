@@ -138,7 +138,7 @@ export async function sendPushNotification(
           method: "POST",
           headers: {
             "Content-Type": "application/json; charset=utf-8",
-            Authorization: `Basic MzcxOTRkYWMtMzY5MS00MWVmLTgxM2ItMmI4Njg2ZmJkMTUy`,
+            Authorization: `Basic ZjQ2MWMyOWYtMGQ4Yy00NzdjLThkODAtYzlhNGJlMmEwNTg3`,
           },
           body: JSON.stringify(notification),
         }
