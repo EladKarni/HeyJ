@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfile } from "../utilities/ProfileProvider";
 import { groupBy, sortBy } from "lodash";
 import Conversation from "../objects/Conversation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { format, isToday, isYesterday, isThisWeek } from "date-fns";
 import Message from "../objects/Message";
 import Profile from "../objects/Profile";
@@ -51,6 +51,8 @@ const ConversationScreen = ({ route }: { route: any }) => {
     { title: string; data: Message[] }[]
   >([]);
   const [otherProfile, setOtherProfile] = useState<Profile | null>(null);
+  const lastMessageCountRef = useRef<number>(0);
+  const lastPlayedMessageIdRef = useRef<string | null>(null);
 
   const getSortedMessages = () => {
     const conversation = conversations.find(
@@ -441,8 +443,44 @@ const ConversationScreen = ({ route }: { route: any }) => {
     }
   }, [sortedMessages.length]);
 
+  // Auto-play new messages when they arrive and autoplay is enabled
+  useEffect(() => {
+    if (!autoplay || !conversation || !profile || !otherProfile) {
+      lastMessageCountRef.current = conversation?.messages.length || 0;
+      return;
+    }
+
+    const currentMessageCount = conversation.messages.length;
+
+    // Check if a new message was added (count increased)
+    if (currentMessageCount > lastMessageCountRef.current) {
+      // Find the newest unheard message from the other user
+      const unheardMessages = conversation.messages
+        .filter(
+          (m) =>
+            m.uid === otherProfile.uid && // From other user
+            !m.isRead // Not read yet
+        )
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by timestamp, newest first
+
+      if (unheardMessages.length > 0) {
+        const newestUnheard = unheardMessages[0];
+
+        // Only auto-play if this is a different message than we last played
+        if (lastPlayedMessageIdRef.current !== newestUnheard.messageId) {
+          console.log("🔔 New message received, autoplaying:", newestUnheard.messageId);
+          lastPlayedMessageIdRef.current = newestUnheard.messageId;
+          setIsAutoPlaying(true);
+          setCurrentUri(newestUnheard.audioUrl);
+        }
+      }
+    }
+
+    lastMessageCountRef.current = currentMessageCount;
+  }, [conversation?.messages.length, autoplay, profile?.uid, otherProfile?.uid, conversation?.messages]);
+
   // Function to find and play the next unheard message
-  const playNextUnheardMessage = () => {
+  const playNextUnheardMessage = useCallback(() => {
     if (!autoplay || !conversation || !profile || !otherProfile) {
       setIsAutoPlaying(false);
       return;
@@ -459,16 +497,20 @@ const ConversationScreen = ({ route }: { route: any }) => {
       )
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()); // Sort by timestamp, oldest first
 
+    console.log("🔍 Looking for next unheard message. Found:", unheardMessages.length, "Current URI:", currentUri);
+
     if (unheardMessages.length > 0) {
       const nextUnheard = unheardMessages[0];
+      console.log("▶️ Playing next unheard message:", nextUnheard.messageId, "URI:", nextUnheard.audioUrl);
       // Small delay to ensure previous message has finished
       setTimeout(() => {
         setCurrentUri(nextUnheard.audioUrl);
-      }, 300);
+      }, 500);
     } else {
+      console.log("✅ No more unheard messages");
       setIsAutoPlaying(false);
     }
-  };
+  }, [autoplay, conversation, profile, otherProfile, currentUri]);
 
   // Auto-play oldest unheard message when conversation opens and autoplay is enabled
   useEffect(() => {

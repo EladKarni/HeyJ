@@ -62,7 +62,9 @@ const RecordingPlayer = ({
 
   const handlePlayStart = () => {
     // Only mark as read if recipient is playing (not the sender) and this is the current message
-    if (!hasMarkedAsRead.current && currentUserUid !== senderUid && currentUri === uri) {
+    // Double-check that we're actually playing this specific message
+    if (!hasMarkedAsRead.current && currentUserUid !== senderUid && currentUri === uri && playerStatus.playing) {
+      console.log("📖 Marking message as read:", messageId, "URI:", uri);
       markMessageAsRead(messageId);
       hasMarkedAsRead.current = true;
       setLocalIsRead(true);
@@ -182,8 +184,13 @@ const RecordingPlayer = ({
               console.error("Error setting audio mode for playback:", error);
             }
           }
-          handlePlayStart();
           audioPlayer.play();
+          // Mark as read after playback starts
+          setTimeout(() => {
+            if (playerStatus.playing && currentUri === uri) {
+              handlePlayStart();
+            }
+          }, 100);
         }
       } else {
         console.error("Error loading audio: File is undefined");
@@ -243,8 +250,13 @@ const RecordingPlayer = ({
       if (isReady && file) {
         // Audio is already loaded, play immediately
         hasAutoPlayed.current = true;
-        handlePlayStart();
         audioPlayer.play();
+        // Mark as read after a small delay to ensure playback actually started
+        setTimeout(() => {
+          if (playerStatus.playing && currentUri === uri) {
+            handlePlayStart();
+          }
+        }, 100);
       } else if (!isLoading && !file) {
         // Audio needs to be loaded first, then play
         hasAutoPlayed.current = true;
@@ -296,6 +308,11 @@ const RecordingPlayer = ({
   }, [playerStatus.playing, playerStatus.currentTime, currentUri, uri, isReady]);
 
   const pausePlay = async () => {
+    // Reset autoplay flag when manually playing (user interaction)
+    if (currentUri !== uri || !playerStatus.playing) {
+      hasAutoPlayed.current = false;
+    }
+
     // Configure audio session for playback before playing (especially important on iOS)
     if (Platform.OS === 'ios') {
       try {
@@ -330,8 +347,13 @@ const RecordingPlayer = ({
       if (isReady && file) {
         // Small delay to ensure player is ready (especially on iOS)
         await new Promise(resolve => setTimeout(resolve, 100));
-        handlePlayStart();
         audioPlayer.play();
+        // Mark as read after playback starts
+        setTimeout(() => {
+          if (playerStatus.playing && currentUri === uri) {
+            handlePlayStart();
+          }
+        }, 100);
         return;
       }
       // Otherwise, load it and then play
@@ -353,8 +375,13 @@ const RecordingPlayer = ({
       audioPlayer.pause();
     } else {
       if (isReady && file) {
-        handlePlayStart();
         audioPlayer.play();
+        // Mark as read after playback starts
+        setTimeout(() => {
+          if (playerStatus.playing && currentUri === uri) {
+            handlePlayStart();
+          }
+        }, 100);
       }
     }
   };
@@ -427,7 +454,7 @@ const RecordingPlayer = ({
             activeOpacity={0.7}
           >
             <Entypo
-              name={isPlaying ? "pause" : "controller-play"}
+              name={isPlaying ? "pause-circle" : "controller-play"}
               size={28}
               color={isLoading || !isReady ? "#999" : isPlaying ? "#FFF" : "#000"}
             />

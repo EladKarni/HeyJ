@@ -11,7 +11,7 @@ import { Entypo, FontAwesome } from "react-native-vector-icons";
 import { useProfile } from "../utilities/ProfileProvider";
 import { sortBy } from "lodash";
 import Conversation from "../objects/Conversation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { format, isToday, isYesterday, isThisWeek, isBefore } from "date-fns";
 import { useNavigation } from "@react-navigation/native";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
@@ -23,6 +23,7 @@ import {
   OneSignal,
 } from "react-native-onesignal";
 import { updateLastRead } from "../utilities/UpdateConversation";
+import { useAudioSettings } from "../utilities/AudioSettingsProvider";
 
 const ConversationsScreen = ({
   selectedConversation,
@@ -33,6 +34,7 @@ const ConversationsScreen = ({
 }) => {
   const navigation = useNavigation();
   const { profile, conversations, profiles, getProfile } = useProfile();
+  const { autoplay } = useAudioSettings();
 
   const [sortedConversations, setSortedConversations] = useState<
     Conversation[]
@@ -79,10 +81,59 @@ const ConversationsScreen = ({
 
   // Track which conversation is currently playing
   const [currentlyPlayingConversationId, setCurrentlyPlayingConversationId] = useState<string | null>(null);
+  const lastMessageCountsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     getSortedConversations();
   }, [conversations]);
+
+  // Auto-play new messages when they arrive and autoplay is enabled
+  useEffect(() => {
+    if (!autoplay || !profile || conversations.length === 0) {
+      // Update message counts
+      conversations.forEach((c) => {
+        lastMessageCountsRef.current[c.conversationId] = c.messages.length;
+      });
+      return;
+    }
+
+    // Check each conversation for new unheard messages
+    conversations.forEach((conversation) => {
+      const currentCount = conversation.messages.length;
+      const lastCount = lastMessageCountsRef.current[conversation.conversationId] || 0;
+
+      // Only proceed if a new message was added
+      if (currentCount > lastCount) {
+        const otherUserUid = conversation.uids.filter((id) => id !== profile.uid)[0];
+        if (!otherUserUid) {
+          lastMessageCountsRef.current[conversation.conversationId] = currentCount;
+          return;
+        }
+
+        // Find the newest unheard message from the other user
+        const unheardMessages = conversation.messages
+          .filter(
+            (m) =>
+              m.uid === otherUserUid && // From other user
+              !m.isRead // Not read yet
+          )
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Sort by timestamp, newest first
+
+        if (unheardMessages.length > 0) {
+          const newestUnheard = unheardMessages[0];
+
+          // Only auto-play if we're not already playing something from this conversation
+          if (currentlyPlayingConversationId !== conversation.conversationId) {
+            console.log("🔔 New message received on home screen, autoplaying:", newestUnheard.messageId);
+            playFromUri(newestUnheard.audioUrl, conversation.conversationId);
+            updateLastRead(conversation.conversationId, profile.uid);
+          }
+        }
+      }
+
+      lastMessageCountsRef.current[conversation.conversationId] = currentCount;
+    });
+  }, [conversations.map(c => `${c.conversationId}:${c.messages.length}`).join(','), autoplay, profile?.uid]);
 
 
   // Clear currently playing conversation when playback stops
