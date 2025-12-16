@@ -13,6 +13,7 @@ interface MessageItemProps {
   autoplay: boolean;
   isAutoPlaying: boolean;
   playNextUnreadMessage?: () => void;
+  stopAutoplay?: () => void;
   styles: ReturnType<typeof createStyles>;
 }
 
@@ -26,6 +27,7 @@ const MessageItem = ({
   autoplay,
   isAutoPlaying,
   playNextUnreadMessage,
+  stopAutoplay,
   styles,
 }: MessageItemProps) => {
   const isIncoming = message.uid === otherProfile?.uid;
@@ -48,6 +50,7 @@ const MessageItem = ({
         isIncoming={isIncoming}
         autoPlay={autoplay && !message.isRead && isAutoPlaying && isIncoming}
         onPlaybackFinished={isAutoPlaying && isIncoming ? playNextUnreadMessage : undefined}
+        stopAutoplay={stopAutoplay}
       />
     </View>
   );

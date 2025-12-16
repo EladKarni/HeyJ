@@ -27,6 +27,7 @@ const RecordingPlayer = ({
   isIncoming,
   autoPlay,
   onPlaybackFinished,
+  stopAutoplay,
 }: {
   uri: string;
   currentUri: string;
@@ -40,6 +41,7 @@ const RecordingPlayer = ({
   isIncoming?: boolean;
   autoPlay?: boolean;
   onPlaybackFinished?: () => void;
+  stopAutoplay?: () => void;
 }) => {
   const [file, setFile] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,8 +229,9 @@ const RecordingPlayer = ({
       // Reset the marked as read flag when switching to a different message
       hasMarkedAsRead.current = false;
       hasAutoPlayed.current = false;
-    } else if (currentUri === uri && (autoPlay || autoplay) && !hasAutoPlayed.current && currentUserUid !== senderUid) {
+    } else if (currentUri === uri && autoPlay && !hasAutoPlayed.current && currentUserUid !== senderUid) {
       // Auto-play when this becomes the current message and autoplay is enabled
+      // Note: autoPlay prop already includes the global autoplay setting check
       if (isReady && file) {
         // Audio is already loaded, play immediately
         hasAutoPlayed.current = true;
@@ -245,7 +248,7 @@ const RecordingPlayer = ({
         loadAudio(true); // Pass true to play after loading
       }
     }
-  }, [currentUri, uri, playerStatus.playing, isReady, file, isLoading, autoPlay, autoplay, currentUserUid, senderUid]);
+  }, [currentUri, uri, playerStatus.playing, isReady, file, isLoading, autoPlay, currentUserUid, senderUid]);
 
   // Update local read state when prop changes (but only if we haven't toggled it manually)
   useEffect(() => {
@@ -337,6 +340,11 @@ const RecordingPlayer = ({
       setCurrentUri(uri);
       // Reset the marked as read flag when switching to a different message
       hasMarkedAsRead.current = false;
+      // Stop autoplay when user manually interacts with playback
+      // This prevents autoplay from interfering with manual playback
+      if (stopAutoplay) {
+        stopAutoplay();
+      }
       // If audio is already loaded and ready, play immediately
       if (isReady && file) {
         // #region agent log

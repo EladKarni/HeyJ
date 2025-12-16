@@ -31,7 +31,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const { autoplay } = useAudioSettings();
 
   const { conversation, sortedMessages, otherProfile } = useConversationMessages(conversationId);
-  const { currentUri, setCurrentUri, isAutoPlaying, playNextUnreadMessage } = useConversationAutoplay(
+  const { currentUri, setCurrentUri, isAutoPlaying, playNextUnreadMessage, stopAutoplay } = useConversationAutoplay(
     conversation,
     otherProfile,
     profile
@@ -95,6 +95,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         autoplay={autoplay}
         isAutoPlaying={isAutoPlaying}
         playNextUnreadMessage={playNextUnreadMessage}
+        stopAutoplay={stopAutoplay}
         messageContainerStyle={styles.messageContainer}
       />
     );
