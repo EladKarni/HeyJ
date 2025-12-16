@@ -32,7 +32,8 @@ async function createTestUsers() {
 
       console.log(`Creating user: ${user.name} (${email})`);
 
-      // Create auth user
+      // Try to create auth user, or sign in if already exists
+      let userId: string | null = null;
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -45,17 +46,51 @@ async function createTestUsers() {
       });
 
       if (authError) {
-        console.error(`❌ Error creating auth user for ${user.name}:`, authError.message);
-        // Try to continue - maybe user already exists
+        if (authError.message.includes("already registered") || authError.message.includes("already exists")) {
+          console.log(`  ℹ️  Auth user already exists, signing in...`);
+          // User already exists, try to sign in to get user ID
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (signInError || !signInData.user) {
+            console.error(`  ❌ Error signing in:`, signInError?.message || "No user returned");
+            // Try to get user by email using admin API if service role key is available
+            const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (serviceRoleKey) {
+              const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+                auth: {
+                  autoRefreshToken: false,
+                  persistSession: false,
+                },
+              });
+              const { data: users } = await adminClient.auth.admin.listUsers();
+              const foundUser = users?.users.find(u => u.email === email);
+              if (foundUser) {
+                userId = foundUser.id;
+                console.log(`  ✅ Found user via admin API: ${userId}`);
+              }
+            }
+            if (!userId) {
+              console.error(`  ❌ Could not get user ID for ${user.name}`);
+              continue;
+            }
+          } else {
+            userId = signInData.user.id;
+            console.log(`  ✅ Signed in existing user: ${userId}`);
+          }
+        } else {
+          console.error(`  ❌ Error creating auth user for ${user.name}:`, authError.message);
+          continue;
+        }
+      } else if (authData.user) {
+        userId = authData.user.id;
+        console.log(`  ✅ Auth user created: ${userId}`);
+      } else {
+        console.error(`  ❌ No user returned for ${user.name}`);
         continue;
       }
-
-      if (!authData.user) {
-        console.error(`❌ No user returned for ${user.name}`);
-        continue;
-      }
-
-      console.log(`  ✅ Auth user created: ${authData.user.id}`);
 
       // Wait a bit for any triggers to run
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -64,7 +99,7 @@ async function createTestUsers() {
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("uid")
-        .eq("uid", authData.user.id)
+        .eq("uid", userId)
         .single();
 
       if (existingProfile) {
@@ -77,7 +112,7 @@ async function createTestUsers() {
             userCode: user.userCode,
             email: email,
           })
-          .eq("uid", authData.user.id);
+          .eq("uid", userId);
 
         if (updateError) {
           console.error(`  ❌ Error updating profile:`, updateError.message);
@@ -88,7 +123,7 @@ async function createTestUsers() {
         // Create profile
         console.log(`  📝 Creating profile...`);
         const { error: profileError } = await supabase.from("profiles").insert({
-          uid: authData.user.id,
+          uid: userId,
           email: email,
           name: user.name,
           profilePicture: defaultProfileImage,
@@ -106,7 +141,7 @@ async function createTestUsers() {
                 name: user.name,
                 userCode: user.userCode,
               })
-              .eq("uid", authData.user.id);
+              .eq("uid", userId);
 
             if (updateError) {
               console.error(`  ❌ Error updating profile:`, updateError.message);

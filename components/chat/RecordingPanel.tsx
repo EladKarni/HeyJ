@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     StyleSheet,
     Text,
     TouchableOpacity,
     useWindowDimensions,
+    Animated,
 } from "react-native";
 import Profile from "../../objects/Profile";
 import TopButtonsRow from "./TopButtonsRow";
@@ -26,6 +27,7 @@ interface RecordingPanelProps {
     loudness?: Number[];
     renderLeftWaves?: () => React.ReactElement;
     renderRightWaves?: () => React.ReactElement;
+    isRecording?: boolean;
 }
 
 const RecordingPanel = ({
@@ -42,10 +44,43 @@ const RecordingPanel = ({
     loudness = Array.from({ length: 20 }, () => 15),
     renderLeftWaves,
     renderRightWaves,
+    isRecording = false,
 }: RecordingPanelProps) => {
     const windowDimensions = useWindowDimensions();
     const styles = Styles(windowDimensions.width);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    
+    // Animation for pulsing effect when recording
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    
+    useEffect(() => {
+        if (isRecording) {
+            // Start pulsing animation
+            const pulseAnimation = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.1,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 600,
+                        useNativeDriver: true,
+                    }),
+                ])
+            );
+            pulseAnimation.start();
+            return () => pulseAnimation.stop();
+        } else {
+            // Reset animation when not recording
+            Animated.timing(pulseAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [isRecording, pulseAnim]);
 
 
     return (
@@ -83,15 +118,32 @@ const RecordingPanel = ({
                     styles={styles}
                 />
             )}
-            <TouchableOpacity
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}
-                style={styles.holdAndSpeakButton}
-                activeOpacity={0.8}
-                disabled={disabled}
+            <Animated.View
+                style={[
+                    { transform: [{ scale: pulseAnim }] },
+                    isRecording && styles.recordingPulseContainer
+                ]}
             >
-                <Text style={styles.holdAndSpeakText}>HOLD TO SPEAK</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    onPressIn={onPressIn}
+                    onPressOut={onPressOut}
+                    style={[
+                        styles.holdAndSpeakButton,
+                        isRecording && styles.holdAndSpeakButtonRecording
+                    ]}
+                    activeOpacity={0.8}
+                    disabled={disabled}
+                >
+                    {isRecording ? (
+                        <View style={styles.recordingContent}>
+                            <View style={styles.recordingIndicator} />
+                            <Text style={styles.holdAndSpeakTextRecording}>RECORDING...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.holdAndSpeakText}>HOLD TO SPEAK</Text>
+                    )}
+                </TouchableOpacity>
+            </Animated.View>
         </View>
     );
 };
@@ -345,11 +397,44 @@ const Styles = (windowWidth: number) =>
             shadowRadius: 5,
             elevation: 4,
         },
+        holdAndSpeakButtonRecording: {
+            backgroundColor: "#F44336",
+            shadowColor: "#F44336",
+            shadowOpacity: 0.5,
+            shadowRadius: 8,
+            elevation: 8,
+        },
+        recordingPulseContainer: {
+            borderRadius: 10,
+        },
+        recordingContent: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+        },
+        recordingIndicator: {
+            width: 16,
+            height: 16,
+            borderRadius: 8,
+            backgroundColor: "#FFF",
+            shadowColor: "#000",
+            shadowOpacity: 0.3,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 3,
+            elevation: 3,
+        },
         holdAndSpeakText: {
             fontSize: 18,
             fontWeight: "bold",
             color: "#FFF",
             letterSpacing: 1,
+        },
+        holdAndSpeakTextRecording: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#FFF",
+            letterSpacing: 2,
         },
         dropdownContainer: {
             flex: 1,

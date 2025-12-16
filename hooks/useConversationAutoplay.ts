@@ -78,19 +78,30 @@ export const useConversationAutoplay = (
 
     // Check if a new message was added (count increased)
     if (currentMessageCount > lastMessageCountRef.current) {
-      // Find the newest unheard message from the other user
-      const unheardMessages = getUnreadMessagesFromOtherUser(conversation, otherProfile.uid);
+      // Get all messages sorted by timestamp to find the newest one
+      const sortedMessages = sortBy(conversation.messages, (m) => m.timestamp.getTime());
+      const newestMessage = sortedMessages[sortedMessages.length - 1];
 
-      if (unheardMessages.length > 0) {
-        const newestUnheard = unheardMessages[0];
+      // Only trigger autoplay if the newest message is from the other user (incoming)
+      // Don't autoplay when the sender sends their own message
+      if (newestMessage && newestMessage.uid === otherProfile.uid) {
+        // Find the newest unheard message from the other user
+        const unheardMessages = getUnreadMessagesFromOtherUser(conversation, otherProfile.uid);
 
-        // Only auto-play if this is a different message than we last played
-        if (lastPlayedMessageIdRef.current !== newestUnheard.messageId) {
-          console.log("🔔 New message received, autoplaying:", newestUnheard.messageId);
-          lastPlayedMessageIdRef.current = newestUnheard.messageId;
-          setIsAutoPlaying(true);
-          setCurrentUri(newestUnheard.audioUrl);
+        if (unheardMessages.length > 0) {
+          const newestUnheard = unheardMessages[0];
+
+          // Only auto-play if this is a different message than we last played
+          if (lastPlayedMessageIdRef.current !== newestUnheard.messageId) {
+            console.log("🔔 New message received, autoplaying:", newestUnheard.messageId);
+            lastPlayedMessageIdRef.current = newestUnheard.messageId;
+            setIsAutoPlaying(true);
+            setCurrentUri(newestUnheard.audioUrl);
+          }
         }
+      } else {
+        // New message is from the sender, don't autoplay anything
+        console.log("📤 New message sent by current user, skipping autoplay");
       }
     }
 

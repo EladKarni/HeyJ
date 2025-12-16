@@ -7,6 +7,7 @@ import {
   setAudioModeAsync,
   RecordingPresets,
 } from "expo-audio";
+import { useAudioRecordingStore } from "../stores/useAudioRecordingStore";
 
 interface UseAudioRecordingOptions {
   onStopRecording?: (uri: string) => Promise<void>;
@@ -19,18 +20,28 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
-  const [recordingAllowed, setRecordingAllowed] = useState("denied");
-  const [loudness, setLoudness] = useState<Number[]>(
-    Array.from({ length: 20 }, () => 15)
-  );
+  
+  // Use Zustand store for state management
+  const {
+    isRecording,
+    recordingAllowed,
+    loudness,
+    width,
+    height,
+    radius,
+    setIsRecording,
+    setRecordingAllowed,
+    setLoudness,
+    setButtonDimensions,
+    setWidth,
+    setHeight,
+    setRadius,
+    resetButtonDimensions,
+  } = useAudioRecordingStore();
 
   const animatedWidth = useRef(new Animated.Value(45)).current;
   const animatedHeight = useRef(new Animated.Value(45)).current;
   const animatedRadius = useRef(new Animated.Value(45)).current;
-
-  const [width, setWidth] = useState(45);
-  const [height, setHeight] = useState(45);
-  const [radius, setRadius] = useState(45);
 
   // Track if we're currently processing a recording to prevent race conditions
   const isProcessingRecording = useRef(false);
@@ -38,7 +49,7 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
   // Request permissions and set up audio mode
   const requestPermissions = async () => {
     const response = await AudioModule.requestRecordingPermissionsAsync();
-    setRecordingAllowed(response.status);
+    setRecordingAllowed(response.status as "granted" | "denied" | "undetermined");
 
     if (response.granted) {
       try {
@@ -56,15 +67,15 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
   useEffect(() => {
     requestPermissions();
 
-    const widthListener = animatedWidth.addListener(({ value }) =>
-      setWidth(value)
-    );
-    const heightListener = animatedHeight.addListener(({ value }) =>
-      setHeight(value)
-    );
-    const radiusListener = animatedRadius.addListener(({ value }) =>
-      setRadius(value)
-    );
+    const widthListener = animatedWidth.addListener(({ value }) => {
+      setWidth(value);
+    });
+    const heightListener = animatedHeight.addListener(({ value }) => {
+      setHeight(value);
+    });
+    const radiusListener = animatedRadius.addListener(({ value }) => {
+      setRadius(value);
+    });
 
     return () => {
       animatedWidth.removeListener(widthListener);
@@ -73,19 +84,28 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
     };
   }, []);
 
+  // Sync recording state with store
+  useEffect(() => {
+    setIsRecording(recorderState.isRecording);
+  }, [recorderState.isRecording, setIsRecording]);
+
   // Monitor recording metering for waveform visualization
   useEffect(() => {
     if (recorderState.isRecording) {
       const interval = setInterval(() => {
         // expo-audio doesn't expose metering directly yet
         // For now, we'll use a simulated waveform
+        const currentLoudness = useAudioRecordingStore.getState().loudness;
         const randomLoudness = Math.random() * 60 + 15;
-        setLoudness((prevLoudness) => [...prevLoudness.slice(-19), randomLoudness]);
+        setLoudness([...currentLoudness.slice(-19), randomLoudness]);
       }, 100);
 
       return () => clearInterval(interval);
+    } else {
+      // Reset loudness when not recording
+      setLoudness(Array.from({ length: 20 }, () => 15));
     }
-  }, [recorderState.isRecording]);
+  }, [recorderState.isRecording, setLoudness]);
 
   const startRecording = async () => {
     if (recordingAllowed !== "granted") {
@@ -128,6 +148,7 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
       console.log("🎤 Starting recording...");
       await audioRecorder.record();
       console.log("✅ Recording started");
+      setIsRecording(true);
 
       // Animate button to recording state
       const widthAnimation = Animated.timing(animatedWidth, {
@@ -198,6 +219,8 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
 
       // Reset UI
       setLoudness(Array.from({ length: 20 }, () => 15));
+      setIsRecording(false);
+      resetButtonDimensions();
 
       // Animate button back to normal state
       const widthAnimation = Animated.timing(animatedWidth, {
@@ -215,7 +238,7 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
       });
 
       const radiusAnimation = Animated.timing(animatedRadius, {
-        toValue: 50,
+        toValue: 45,
         duration: 100,
         easing: Easing.linear,
         useNativeDriver: false,

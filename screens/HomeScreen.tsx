@@ -16,6 +16,7 @@ import RecordingPanel from "../components/chat/RecordingPanel";
 import { supabase } from "../utilities/Supabase";
 import { useAudioRecording } from "../hooks/useAudioRecording";
 import { useConversationListStore } from "../stores/useConversationListStore";
+import { useAudioRecordingStore } from "../stores/useAudioRecordingStore";
 import { createStyles as createHomeScreenStyles } from "../styles/HomeScreen.styles";
 
 const HomeScreen = () => {
@@ -65,6 +66,7 @@ const HomeScreen = () => {
   }
 
   const { selectedConversation, setSelectedConversation } = useConversationListStore();
+  const { isRecording } = useAudioRecordingStore();
   const [selectedRecipientName, setSelectedRecipientName] = useState<string>("");
   const [selectedFriendUid, setSelectedFriendUid] = useState<string | null>(null);
 
@@ -211,6 +213,7 @@ const HomeScreen = () => {
         friends={friends}
         selectedFriendUid={selectedFriendUid}
         onFriendSelected={handleFriendSelected}
+        isRecording={isRecording}
       />
     </View>
   );

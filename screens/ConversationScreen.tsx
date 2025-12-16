@@ -16,6 +16,7 @@ import { updateLastRead } from "../utilities/UpdateConversation";
 import { useAudioSettings } from "../utilities/AudioSettingsProvider";
 import { useAudioRecording } from "../hooks/useAudioRecording";
 import { useConversationMessages } from "../hooks/useConversationMessages";
+import { useAudioRecordingStore } from "../stores/useAudioRecordingStore";
 import { useConversationAutoplay } from "../hooks/useConversationAutoplay";
 import { ConversationScreenProps, RootStackParamList } from "../types/navigation";
 import MessageSection from "../components/chat/MessageSection";
@@ -35,6 +36,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
     otherProfile,
     profile
   );
+  const { isRecording } = useAudioRecordingStore();
 
   useEffect(() => {
     navigation.setOptions({
@@ -140,6 +142,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         showTopButtons={true}
         showRecipient={true}
         recipientName={otherProfile?.name || "Select a Conversation"}
+        isRecording={isRecording}
       />
     </View>
   );
