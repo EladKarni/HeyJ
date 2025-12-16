@@ -51,7 +51,7 @@ const PasswordStrengthIndicator = ({
         <Text style={styles.requirementsTitle}>Password must have:</Text>
         <RequirementItem
           met={passwordStrength.requirements.length}
-          text="At least 12 characters"
+          text={__DEV__ ? "At least 1 character (dev mode)" : "At least 12 characters"}
         />
         <RequirementItem
           met={passwordStrength.requirements.uppercase}

@@ -139,7 +139,9 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
       Alert.alert("Error", "Please enter a password");
       return;
     }
-    if (passwordStrength.score < 2) {
+    // In dev mode, skip password strength validation (allow any password)
+    // In production, require minimum strength score of 2
+    if (!__DEV__ && passwordStrength.score < 2) {
       Alert.alert(
         "Weak Password",
         "Please create a stronger password. Your password should be at least 12 characters and include uppercase, lowercase, numbers, and special characters."

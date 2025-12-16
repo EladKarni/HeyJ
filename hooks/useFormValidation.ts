@@ -25,8 +25,11 @@ export const useFormValidation = () => {
   }, [email]);
 
   const calculatePasswordStrength = (pwd: string): PasswordStrength => {
+    // In dev mode, use minimum length of 1 instead of 12
+    const minLength = __DEV__ ? 1 : 12;
+    
     const requirements = {
-      length: pwd.length >= 12,
+      length: pwd.length >= minLength,
       uppercase: /[A-Z]/.test(pwd),
       lowercase: /[a-z]/.test(pwd),
       number: /[0-9]/.test(pwd),
@@ -39,25 +42,50 @@ export const useFormValidation = () => {
     let label = "Very Weak";
     let color = "#ff4444";
 
-    if (requirements.length && metRequirements >= 2) {
-      score = 1;
-      label = "Weak";
-      color = "#ff8800";
-    }
-    if (requirements.length && metRequirements >= 3) {
-      score = 2;
-      label = "Fair";
-      color = "#ffbb00";
-    }
-    if (requirements.length && metRequirements >= 4) {
-      score = 3;
-      label = "Good";
-      color = "#88cc00";
-    }
-    if (requirements.length && metRequirements === 5) {
-      score = 4;
-      label = "Strong";
-      color = "#00cc44";
+    // In dev mode, allow lower scores without length requirement
+    if (__DEV__) {
+      if (metRequirements >= 1) {
+        score = 1;
+        label = "Weak";
+        color = "#ff8800";
+      }
+      if (metRequirements >= 2) {
+        score = 2;
+        label = "Fair";
+        color = "#ffbb00";
+      }
+      if (metRequirements >= 3) {
+        score = 3;
+        label = "Good";
+        color = "#88cc00";
+      }
+      if (metRequirements >= 4) {
+        score = 4;
+        label = "Strong";
+        color = "#00cc44";
+      }
+    } else {
+      // Production mode: require length requirement
+      if (requirements.length && metRequirements >= 2) {
+        score = 1;
+        label = "Weak";
+        color = "#ff8800";
+      }
+      if (requirements.length && metRequirements >= 3) {
+        score = 2;
+        label = "Fair";
+        color = "#ffbb00";
+      }
+      if (requirements.length && metRequirements >= 4) {
+        score = 3;
+        label = "Good";
+        color = "#88cc00";
+      }
+      if (requirements.length && metRequirements === 5) {
+        score = 4;
+        label = "Strong";
+        color = "#00cc44";
+      }
     }
 
     return { score, label, color, requirements };
@@ -86,7 +114,9 @@ export const useFormValidation = () => {
       return false;
     }
     const strength = calculatePasswordStrength(passwordValue);
-    return strength.score >= minStrength;
+    // In dev mode, allow any password with score >= 1
+    const requiredStrength = __DEV__ ? 1 : minStrength;
+    return strength.score >= requiredStrength;
   };
 
   return {
