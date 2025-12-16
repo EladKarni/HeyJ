@@ -1,13 +1,11 @@
 import { useNavigation } from "@react-navigation/native";
 import { Alert } from "react-native";
 import { useProfile } from "./ProfileProvider";
-import { Audio } from "expo-av";
 import UUID from "react-native-uuid";
 import { supabase } from "../utilities/Supabase";
 import Message from "../objects/Message";
 import Profile from "../objects/Profile";
 import Conversation from "../objects/Conversation";
-import { sendPushNotification } from "./Onesignal";
 
 export const sendMessage = async (
   navigation: any,
@@ -69,13 +67,8 @@ export const sendMessage = async (
           );
           return;
         } else {
-          sendPushNotification(
-            conversation.uids.filter((id) => id !== profile?.uid)[0],
-            `${profile?.firstName} ${profile?.lastName}`,
-            profile?.profilePicture!,
-            conversationId,
-            url
-          );
+          // Push notifications disabled for testing
+          console.log("Message sent successfully (push notifications disabled)");
         }
       }
     }

@@ -4,35 +4,35 @@ import Conversation from "./Conversation";
 export default class Profile {
   uid: string;
   profilePicture: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   conversations: string[];
+  userCode: string;
 
   constructor(
     uid: string,
     profilePicture: string,
-    firstName: string,
-    lastName: string,
+    name: string,
     email: string,
-    conversations: string[]
+    conversations: string[],
+    userCode: string
   ) {
     this.uid = uid;
     this.profilePicture = profilePicture;
-    this.firstName = firstName;
-    this.lastName = lastName;
+    this.name = name;
     this.email = email;
     this.conversations = conversations;
+    this.userCode = userCode;
   }
 
   toJSON() {
     return {
       uid: this.uid,
       profilePicture: this.profilePicture,
-      firstName: this.firstName,
-      lastName: this.lastName,
+      name: this.name,
       email: this.email,
       conversations: this.conversations,
+      userCode: this.userCode,
     };
   }
 
@@ -40,9 +40,9 @@ export default class Profile {
     return {
       uid: this.uid,
       profilePicture: this.profilePicture,
-      firstName: this.firstName,
-      lastName: this.lastName,
+      name: this.name,
       email: this.email,
+      userCode: this.userCode,
     };
   };
 
@@ -50,10 +50,10 @@ export default class Profile {
     return new Profile(
       data.uid,
       data.profilePicture,
-      data.firstName,
-      data.lastName,
+      data.name,
       data.email,
-      data.conversations
+      data.conversations,
+      data.userCode || `${data.name}@${Math.floor(Math.random() * 9999)}` // Fallback for existing profiles
     );
   }
 }

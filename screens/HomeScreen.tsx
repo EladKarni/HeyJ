@@ -11,7 +11,11 @@ import {
   Image,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import { Audio } from "expo-av";
+import {
+  useAudioRecorder,
+  RecordingOptions,
+  AudioModule,
+} from "expo-audio";
 import { useEffect, useRef, useState } from "react";
 // @ts-expect-error
 import { FontAwesome } from "react-native-vector-icons";
@@ -32,14 +36,37 @@ const HomeScreen = () => {
     {
       label: string;
       value: string;
-      icon: () => JSX.Element;
+      icon: () => React.ReactElement;
     }[]
   >([]);
 
-  const [recording, setRecording] = useState<Audio.Recording>();
+  const recordingOptions: RecordingOptions = {
+    extension: '.m4a',
+    sampleRate: 44100,
+    numberOfChannels: 2,
+    bitRate: 128000,
+    android: {
+      extension: '.m4a',
+      outputFormat: 'mpeg4',
+      audioEncoder: 'aac',
+      sampleRate: 44100,
+    },
+    ios: {
+      extension: '.m4a',
+      audioQuality: 127,
+      sampleRate: 44100,
+      linearPCMBitDepth: 16,
+      linearPCMIsBigEndian: false,
+      linearPCMIsFloat: false,
+    },
+    web: {
+      mimeType: 'audio/webm',
+      bitsPerSecond: 128000,
+    },
+  };
+
+  const audioRecorder = useAudioRecorder(recordingOptions);
   const [recordingAllowed, setRecordingAllowed] = useState("denied");
-  const [recordingStatus, setRecordingStatus] =
-    useState<Audio.RecordingStatus>();
   const [loudness, setLoudness] = useState<Number[]>(
     Array.from({ length: 20 }, () => 15)
   );
@@ -60,10 +87,7 @@ const HomeScreen = () => {
           const otherProfile = profiles.find((p) => p.uid === uid);
 
           return {
-            label:
-              otherProfile?.firstName ||
-              "---" + " " + otherProfile?.lastName ||
-              "---",
+            label: otherProfile?.name || "---",
             value: c.conversationId,
             icon: () => (
               <Image
@@ -101,7 +125,7 @@ const HomeScreen = () => {
   }, []);
 
   const requestPermissions = async () => {
-    const response = await Audio.requestPermissionsAsync();
+    const response = await AudioModule.requestRecordingPermissionsAsync();
     setRecordingAllowed(response.status);
   };
 
@@ -116,96 +140,76 @@ const HomeScreen = () => {
       return;
     }
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: true,
-    });
+    try {
+      console.log("🎤 Starting recording...");
+      await audioRecorder.record();
+      console.log("✅ Recording started");
 
-    const newRecording = new Audio.Recording();
-    setRecording(newRecording);
+      const widthAnimation = Animated.timing(animatedWidth, {
+        toValue: 30,
+        duration: 100,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      });
 
-    newRecording.setProgressUpdateInterval(10);
-    await newRecording.prepareToRecordAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY
-    );
+      const heightAnimation = Animated.timing(animatedHeight, {
+        toValue: 30,
+        duration: 100,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      });
 
-    newRecording.setOnRecordingStatusUpdate((status: Audio.RecordingStatus) => {
-      setRecordingStatus(status);
-    });
+      const radiusAnimation = Animated.timing(animatedRadius, {
+        toValue: 10,
+        duration: 100,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      });
 
-    await newRecording.startAsync();
+      const parallelAnimation = Animated.parallel([
+        widthAnimation,
+        heightAnimation,
+        radiusAnimation,
+      ]);
 
-    const widthAnimation = Animated.timing(animatedWidth, {
-      toValue: 30,
-      duration: 100,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    });
-
-    const heightAnimation = Animated.timing(animatedHeight, {
-      toValue: 30,
-      duration: 100,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    });
-
-    const radiusAnimation = Animated.timing(animatedRadius, {
-      toValue: 10,
-      duration: 100,
-      easing: Easing.linear,
-      useNativeDriver: false,
-    });
-
-    const parallelAnimation = Animated.parallel([
-      widthAnimation,
-      heightAnimation,
-      radiusAnimation,
-    ]);
-
-    parallelAnimation.start();
+      parallelAnimation.start();
+    } catch (error) {
+      console.error("❌ Error starting recording:", error);
+    }
   };
 
+  // Monitor recording metering for waveform visualization
   useEffect(() => {
-    const newNumber = recordingStatus?.metering;
-    if (newNumber) {
-      const interpolate = (
-        value: any,
-        inMin: any,
-        inMax: any,
-        outMin: any,
-        outMax: any
-      ) => {
-        return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
-      };
+    if (audioRecorder.isRecording) {
+      const interval = setInterval(() => {
+        // expo-audio doesn't expose metering directly yet
+        // For now, we'll use a simulated waveform
+        const randomLoudness = Math.random() * 60 + 15;
+        setLoudness((prevLoudness) => [...prevLoudness.slice(-19), randomLoudness]);
+      }, 100);
 
-      const adjustedLoudness = interpolate(newNumber, -160, 0, 0, 75);
-
-      setLoudness((prevLoudness) => [...prevLoudness, adjustedLoudness]);
+      return () => clearInterval(interval);
     }
-  }, [recordingStatus]);
+  }, [audioRecorder.isRecording]);
 
   const stopRecording = async () => {
-    if (!selectedConversation || !recording) {
+    if (!selectedConversation || !audioRecorder.isRecording) {
       return;
     }
 
-    Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-
     try {
-      await recording.stopAndUnloadAsync();
-      sendMessage(
-        navigation,
-        { profile, conversations },
-        recording.getURI()!,
-        selectedConversation
-      );
+      await audioRecorder.stop();
+      if (audioRecorder.uri) {
+        await sendMessage(
+          navigation,
+          { profile, conversations },
+          audioRecorder.uri,
+          selectedConversation
+        );
+      }
     } catch (error) {
       console.error("Error stopping recording:", error);
     } finally {
-      setRecording(undefined);
       setLoudness(Array.from({ length: 20 }, () => 15));
 
       const widthAnimation = Animated.timing(animatedWidth, {

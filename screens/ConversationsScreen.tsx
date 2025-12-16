@@ -14,8 +14,9 @@ import Conversation from "../objects/Conversation";
 import { useEffect, useState } from "react";
 import { format, isToday, isYesterday, isThisWeek, isBefore } from "date-fns";
 import { useNavigation } from "@react-navigation/native";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import { useAudioPlayer } from "expo-audio";
+import { documentDirectory, createDownloadResumable } from "expo-file-system/legacy";
+// OneSignal is mocked - see mocks/react-native-onesignal.js
 import {
   NotificationClickEvent,
   NotificationWillDisplayEvent,
@@ -73,38 +74,34 @@ const ConversationsScreen = ({
     }
   }, [sortedConversations]);
 
+  const audioPlayer = useAudioPlayer();
+
   useEffect(() => {
     getSortedConversations();
-
-    Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: true,
-    });
   }, [conversations]);
 
   const playFromUri = async (uri: string) => {
-    const downloadResumable = FileSystem.createDownloadResumable(
-      uri,
-      FileSystem.documentDirectory + "small.mp4",
-      {}
-    );
-
-    const newFile = await downloadResumable.downloadAsync();
-    const { sound } = await Audio.Sound.createAsync({
-      uri: newFile!.uri,
-    });
-
-    sound.setOnPlaybackStatusUpdate(async (status) => {
-      if (status.isLoaded) {
-        if (status.didJustFinish) {
-          await sound.unloadAsync();
-        }
+    try {
+      const docDir = documentDirectory;
+      if (!docDir) {
+        console.error("Error playing audio: Document directory is undefined");
+        return;
       }
-    });
+      
+      const downloadResumable = createDownloadResumable(
+        uri,
+        docDir + "notification.mp4",
+        {}
+      );
 
-    await sound.playAsync();
+      const newFile = await downloadResumable.downloadAsync();
+      if (newFile) {
+        audioPlayer.replace(newFile.uri);
+        audioPlayer.play();
+      }
+    } catch (error) {
+      console.error("Error playing audio from URI:", error);
+    }
   };
 
   useEffect(() => {
@@ -191,7 +188,7 @@ const ConversationsScreen = ({
           />
           <View style={styles.textContainer}>
             <Text style={styles.profileName}>
-              {otherProfile.firstName} {otherProfile.lastName}
+              {otherProfile.name}
             </Text>
             <Text style={styles.lastMessage}>
               Last Message: {formatDate(lastMessageTimestamp(conversation))}

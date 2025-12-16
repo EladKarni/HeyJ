@@ -4,7 +4,6 @@ import { supabase } from "./Supabase";
 import { View } from "react-native";
 import Profile from "../objects/Profile";
 import Conversation from "../objects/Conversation";
-import { registerForPushNotificationsAsync } from "./Onesignal";
 
 const ProfileContext = createContext<{
   appReady: boolean;
@@ -61,9 +60,20 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
       .select("*")
       .eq("uid", id)
       .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching profile:", error);
+          setProfile(null);
+          return;
+        }
+        
         if (data && data[0]) {
-          const profile = Profile.fromJSON(data[0]);
-          setProfile(profile);
+          try {
+            const profile = Profile.fromJSON(data[0]);
+            setProfile(profile);
+          } catch (err: unknown) {
+            console.error("Error parsing profile:", err);
+            setProfile(null);
+          }
         } else {
           setProfile(null);
         }
@@ -106,10 +116,7 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     updateProfile();
-
-    if (user) {
-      registerForPushNotificationsAsync();
-    }
+    // Push notifications disabled for testing
   }, [user]);
 
   useEffect(() => {
@@ -145,10 +152,15 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
   const getConversations = async () => {
+    if (!profile || !profile.conversations || profile.conversations.length === 0) {
+      setConversations([]);
+      return;
+    }
+
     let conversations: Conversation[] = [];
 
     await Promise.all(
-      profile!.conversations.map(async (id: string) => {
+      profile.conversations.map(async (id: string) => {
         try {
           const { data: conversationData, error } = await supabase
             .from("conversations")
@@ -176,7 +188,11 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
   }, [profile]);
 
   const updateConversations = async () => {
-    profile?.conversations.forEach((id: string) => {
+    if (!profile || !profile.conversations || profile.conversations.length === 0) {
+      return;
+    }
+
+    profile.conversations.forEach((id: string) => {
       try {
         const channel = supabase.channel(id + "_conversation");
 
@@ -224,11 +240,20 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
   const getProfiles = async () => {
+    if (!conversations || conversations.length === 0) {
+      setProfiles([]);
+      return;
+    }
+
     let profiles: Profile[] = [];
 
     await Promise.all(
       conversations.map(async (c) => {
         const uid = c.uids.filter((id) => id !== profile?.uid)[0];
+
+        if (!uid) {
+          return;
+        }
 
         try {
           const { data, error } = await supabase

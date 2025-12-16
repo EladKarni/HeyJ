@@ -12,8 +12,10 @@ export const updateLastRead = async (
 
   if (conversationData && conversationData[0]) {
     const conversation = await Conversation.fromJSON(conversationData[0]);
+    // Update the lastRead for the current user, keep others unchanged
+    const otherUsersLastRead = conversation.lastRead.filter((l) => l.uid !== currentUid);
     const newLastRead = [
-      conversation.lastRead.filter((l) => l.uid !== currentUid)[0],
+      ...otherUsersLastRead,
       { uid: currentUid, timestamp: new Date() },
     ];
     const newConversation = {

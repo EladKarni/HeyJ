@@ -1,6 +1,7 @@
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import OAuthButton from "./components/auth/OAuthButton";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
@@ -9,12 +10,15 @@ import { supabase } from "./utilities/Supabase";
 import { Ionicons } from "react-native-vector-icons";
 import { ProfileProvider, useProfile } from "./utilities/ProfileProvider";
 import HomeScreen from "./screens/HomeScreen";
+import LoginScreen from "./screens/LoginScreen";
+import SignupScreen from "./screens/SignupScreen";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import ConversationScreen from "./screens/ConversationScreen";
 import ModalWrapper from "./utilities/ModalWrapper";
 global.Buffer = require("buffer").Buffer;
 
 const Stack = createStackNavigator();
+const AuthStack = createStackNavigator();
 
 export default function App() {
   const [loadingUser, setLoadingUser] = useState(true);
@@ -44,23 +48,37 @@ export default function App() {
 
   if (user) {
     return (
-      <NavigationContainer>
-        <ActionSheetProvider>
-          <ProfileProvider>
-            <ModalWrapper>
-              <Navigation />
-            </ModalWrapper>
-          </ProfileProvider>
-        </ActionSheetProvider>
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <ActionSheetProvider>
+            <ProfileProvider>
+              <ModalWrapper>
+                <Navigation />
+              </ModalWrapper>
+            </ProfileProvider>
+          </ActionSheetProvider>
+        </NavigationContainer>
+      </SafeAreaProvider>
     );
   } else {
     return (
-      <View style={styles.container}>
-        <OAuthButton type="google" />
-        <OAuthButton type="apple" />
-        <OAuthButton type="facebook" />
-      </View>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+            <AuthStack.Screen name="Login" component={LoginScreen} />
+            <AuthStack.Screen 
+              name="Signup" 
+              component={SignupScreen}
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerBackTitleVisible: false,
+                headerTintColor: "#000",
+              }}
+            />
+          </AuthStack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
     );
   }
 }
@@ -80,7 +98,7 @@ const Navigation = () => {
                 style={{ left: 15 }}
                 onPress={() => setViewProfile(true)}
               >
-                <Ionicons name="md-person" size={25} />
+                <Ionicons name="person" size={25} />
               </TouchableOpacity>
             ),
             headerTitleAlign: "center",

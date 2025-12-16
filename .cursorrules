@@ -1,0 +1,13 @@
+# Cursor Rules for HeyJ Project
+
+## MCP Configuration
+- Supabase MCP is configured in `.cursor/mcp.json`
+- Replace `YOUR_SERVICE_ROLE_KEY_HERE` with your actual service role key from Supabase dashboard
+
+## Database Schema
+- The `profiles` table should have a `userCode` column (TEXT type)
+- userCode format: `Name@1234` (name without spaces + @ + 4-digit number)
+
+## Code Style
+- Use TypeScript with React Native
+- Follow existing code patterns in the project

@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import Slider from "@react-native-community/slider";
 // @ts-expect-error
 import { Entypo } from "react-native-vector-icons";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
+import { useAudioPlayer, AudioSource } from "expo-audio";
+import { documentDirectory, createDownloadResumable } from "expo-file-system/legacy";
 import UUID from "react-native-uuid";
 
 const RecordingPlayer = ({
@@ -16,50 +16,31 @@ const RecordingPlayer = ({
   currentUri: string;
   setCurrentUri: any;
 }) => {
-  const [file, setFile] = useState<
-    FileSystem.FileSystemDownloadResult | undefined
-  >(undefined);
-  const sound = useRef<Audio.Sound | null>(null);
+  const [file, setFile] = useState<string | undefined>(undefined);
+  const audioPlayer = useAudioPlayer(file || "");
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState<number | null>(0);
-  const [filePosition, setFilePosition] = useState(0);
   const [position, setPosition] = useState(0);
 
   const loadAudio = async () => {
     try {
-      const downloadResumable = FileSystem.createDownloadResumable(
+      const docDir = documentDirectory;
+      if (!docDir) {
+        console.error("Error loading audio: Document directory is undefined");
+        return;
+      }
+      
+      const downloadResumable = createDownloadResumable(
         uri,
-        FileSystem.documentDirectory + `${UUID.v4()} small.mp4`,
+        docDir + `${UUID.v4()}.mp4`,
         { cache: true }
       );
-
-      Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
 
       const newFile = await downloadResumable.downloadAsync();
 
       if (newFile) {
-        setFile(newFile);
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          {
-            uri: newFile!.uri,
-          },
-          { shouldPlay: true }
-        );
-        sound.current = newSound;
-        await sound.current.setProgressUpdateIntervalAsync(10);
-        sound.current.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded) {
-            setDuration(status.durationMillis!);
-            setFilePosition(status.positionMillis);
-            setPosition(status.positionMillis);
-
-            if (status.didJustFinish) {
-              setPosition(0);
-              setPlaying(false);
-              sound.current?.pauseAsync().catch(() => {});
-            }
-          }
-        });
+        setFile(newFile.uri);
+        audioPlayer.replace(newFile.uri);
       } else {
         console.error("Error loading audio: File is undefined");
       }
@@ -70,9 +51,8 @@ const RecordingPlayer = ({
 
   const unloadAudio = async () => {
     setFile(undefined);
-    await sound.current?.unloadAsync();
+    audioPlayer.pause();
     setPosition(0);
-    setFilePosition(0);
     setPlaying(false);
   };
 
@@ -84,32 +64,39 @@ const RecordingPlayer = ({
     }
   }, [currentUri]);
 
-  const updatePosition = async () => {
-    if (currentUri !== uri) {
-      return;
-    }
-
-    if (position !== filePosition) {
-      await sound.current?.setPositionAsync(position).catch(() => {});
-    }
-  };
-
+  // Monitor playback progress
   useEffect(() => {
-    updatePosition();
-  }, [position]);
+    if (audioPlayer.playing && currentUri === uri) {
+      const interval = setInterval(() => {
+        setPosition(audioPlayer.currentTime * 1000);
+        if (audioPlayer.duration) {
+          setDuration(audioPlayer.duration * 1000);
+        }
+        
+        // Check if finished
+        if (audioPlayer.currentTime >= (audioPlayer.duration || 0)) {
+          setPosition(0);
+          setPlaying(false);
+          audioPlayer.pause();
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [audioPlayer.playing, currentUri]);
 
   const pausePlay = async () => {
     if (currentUri !== uri) {
       setCurrentUri(uri);
+      return;
     }
 
-    setPlaying(!playing);
-    if (sound.current) {
-      if (playing) {
-        await sound.current.pauseAsync();
-      } else {
-        await sound.current.playAsync().catch((e) => console.log(e));
-      }
+    if (playing) {
+      audioPlayer.pause();
+      setPlaying(false);
+    } else {
+      audioPlayer.play();
+      setPlaying(true);
     }
   };
 
@@ -127,7 +114,10 @@ const RecordingPlayer = ({
           minimumValue={0}
           maximumValue={duration || 0}
           value={position}
-          onValueChange={(value) => setPosition(value)}
+          onValueChange={(value) => {
+            setPosition(value);
+            audioPlayer.seekTo(value / 1000);
+          }}
           minimumTrackTintColor="#000"
           maximumTrackTintColor="#A2A2A2"
         />

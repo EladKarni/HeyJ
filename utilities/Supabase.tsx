@@ -2,9 +2,10 @@ import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseUrl = "https://hznmgicetppbdljxrfkr.supabase.co";
+// Hosted Supabase configuration
+export const supabaseUrl = "https://ifmwepbepoujfnzisrjz.supabase.co";
 const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bm1naWNldHBwYmRsanhyZmtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDIyNDk5MzMsImV4cCI6MjAxNzgyNTkzM30.jYSdxCfQ3L4luWikIwvbIvWKjqFeaJ4kOoB12zre1sY";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmbXdlcGJlcG91amZuemlzcmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3ODQzODIsImV4cCI6MjA3NTM2MDM4Mn0.itUOgm94FL8dRPPiNz3TYZm4ca4e8LWlB-FNzrL9298";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -14,3 +15,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Auth state change listener (logging disabled)

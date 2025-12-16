@@ -6,17 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "myapp",
+    "scheme": "heyj",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSCameraUsageDescription": "Allow this app to access camera.",
         "NSMicrophoneUsageDescription": "Allow this app to access your microphone"
       },
@@ -25,11 +29,13 @@
       },
       "bundleIdentifier": "com.ekarni.heyj",
       "splash": {
-        "backgroundColor": "#FFF",
+        "backgroundColor": "#FFFFFF",
         "image": "./assets/splash.png"
       },
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
       }
     },
     "android": {
@@ -44,7 +50,7 @@
       "package": "com.ekarni.heyj",
       "runtimeVersion": "1.0.0",
       "splash": {
-        "backgroundColor": "#FFF",
+        "backgroundColor": "#FFFFFF",
         "image": "./assets/splash.png"
       }
     },
@@ -53,29 +59,17 @@
     },
     "plugins": [
       [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "Allow this app to access camera."
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos."
         }
       ],
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development"
-        }
-      ]
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
         "projectId": "425b4502-a4b9-4fe6-a2ea-ca4129daa0dc"
-      },
-      "oneSignalAppId": "1d79c718-998c-49d0-89cb-37c5ea140309"
+      }
     }
   }
 }
