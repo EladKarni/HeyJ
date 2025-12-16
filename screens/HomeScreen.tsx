@@ -10,7 +10,6 @@ import {
   useWindowDimensions,
   Image,
 } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
 import {
   useAudioRecorder,
   RecordingOptions,
@@ -19,8 +18,6 @@ import {
   useAudioRecorderState,
 } from "expo-audio";
 import { useEffect, useRef, useState } from "react";
-// @ts-expect-error
-import { FontAwesome } from "react-native-vector-icons";
 import { useProfile } from "../utilities/ProfileProvider";
 import ConversationsScreen from "./ConversationsScreen";
 import { sendMessage } from "../utilities/SendMessage";
@@ -30,17 +27,10 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const { profile, conversations, profiles } = useProfile();
 
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<
     string | null
   >(null);
-  const [pickerOptions, setPickerOptions] = useState<
-    {
-      label: string;
-      value: string;
-      icon: () => React.ReactElement;
-    }[]
-  >([]);
+  const [selectedRecipientName, setSelectedRecipientName] = useState<string>("");
 
   const recordingOptions: RecordingOptions = {
     extension: '.m4a',
@@ -69,7 +59,6 @@ const HomeScreen = () => {
 
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(audioRecorder);
   const [recordingAllowed, setRecordingAllowed] = useState("denied");
   const [loudness, setLoudness] = useState<Number[]>(
     Array.from({ length: 20 }, () => 15)
@@ -84,27 +73,19 @@ const HomeScreen = () => {
   const [radius, setRadius] = useState(45);
 
   useEffect(() => {
-    if (profile) {
-      const options =
-        conversations.map((c) => {
-          const uid: string = c.uids.filter((id) => id !== profile?.uid)[0];
-          const otherProfile = profiles.find((p) => p.uid === uid);
-
-          return {
-            label: otherProfile?.name || "---",
-            value: c.conversationId,
-            icon: () => (
-              <Image
-                source={{ uri: otherProfile?.profilePicture }}
-                style={styles.selectionImage}
-              />
-            ),
-          };
-        }) || [];
-
-      setPickerOptions(options);
+    if (profile && selectedConversation) {
+      const conversation = conversations.find((c) => c.conversationId === selectedConversation);
+      if (conversation) {
+        const uid: string = conversation.uids.filter((id) => id !== profile?.uid)[0];
+        const otherProfile = profiles.find((p) => p.uid === uid);
+        setSelectedRecipientName(otherProfile?.name || "---");
+      } else {
+        setSelectedRecipientName("");
+      }
+    } else {
+      setSelectedRecipientName("");
     }
-  }, [profile, profiles]);
+  }, [profile, profiles, selectedConversation, conversations]);
 
   useEffect(() => {
     navigation.addListener("blur", (event) => { });
@@ -285,9 +266,6 @@ const HomeScreen = () => {
     );
   };
 
-  const noConversations = () => {
-    return <Text style={styles.noConversationsLabel}>No Conversations</Text>;
-  };
 
   return (
     <View style={styles.container}>
@@ -302,33 +280,22 @@ const HomeScreen = () => {
         </View>
       )}
       <View style={styles.selectionContainer}>
-        <DropDownPicker
-          open={pickerOpen}
-          value={selectedConversation}
-          items={pickerOptions}
-          placeholder="Select a Conversation"
-          setOpen={setPickerOpen}
-          setValue={setSelectedConversation}
-          onChangeValue={(value) => setSelectedConversation(value)}
-          containerStyle={styles.conversationPicker}
-          ListEmptyComponent={noConversations}
-        />
-        <View style={styles.recordingContainer}>
-          <View style={styles.waveFormContainer}>
-            {renderLeftWaves()}
-            <View style={styles.waveDivider} />
-            {renderRightWaves()}
+        <View style={styles.recipientContainer}>
+          <Text style={styles.recipientLabel}>To:</Text>
+          <View style={styles.recipientField}>
+            <Text style={styles.recipientName}>
+              {selectedRecipientName || "Select a Conversation"}
+            </Text>
           </View>
-          <TouchableOpacity
-            onPressIn={startRecording}
-            onPressOut={stopRecording}
-            style={styles.buttonOutline}
-          >
-            <View style={styles.button}>
-              <FontAwesome name="microphone" style={styles.microphone} />
-            </View>
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          onPressIn={startRecording}
+          onPressOut={stopRecording}
+          style={styles.holdAndSpeakButton}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.holdAndSpeakText}>HOLD TO SPEAK</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -345,71 +312,51 @@ const Styles = (
     container: {
       flex: 1,
     },
-    pickerLabel: {
-      bottom: 165,
-    },
-    conversationPicker: {
-      width: "80%",
-      // bottom: 150,
-      alignSelf: "center",
-    },
-    noConversationsLabel: {
-      alignSelf: "center",
-      paddingVertical: 2,
-    },
-    selectionImage: {
-      width: 35,
-      height: 35,
-      borderRadius: 50,
-    },
     selectionContainer: {
-      height: 175,
-      width: useWindowDimensions().width * 0.88,
-      backgroundColor: "#E2E2E2",
-      borderRadius: 25,
+      minHeight: 200,
+      width: useWindowDimensions().width * 0.95,
+      backgroundColor: "#D3D3D3",
+      borderRadius: 12,
       alignSelf: "center",
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#A2A2A2",
-      shadowOpacity: 0.5,
-      shadowOffset: { width: 3, height: 3 },
+      paddingVertical: 20,
+      paddingHorizontal: 20,
+      shadowColor: "#000",
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 2, height: 4 },
+      shadowRadius: 6,
       position: "absolute",
       bottom: 35,
+      borderWidth: 2,
+      borderColor: "#B0B0B0",
+      borderTopWidth: 1,
     },
     recordingContainer: {
-      height: 100,
-      width: useWindowDimensions().width * 0.88,
+      height: 80,
+      width: "100%",
       flexDirection: "row",
-      // backgroundColor: "#E2E2E2",
-      // borderRadius: 25,
       alignSelf: "center",
       justifyContent: "flex-start",
       alignItems: "center",
-      // shadowColor: "#A2A2A2",
-      // shadowOpacity: 0.5,
-      // shadowOffset: { width: 3, height: 3 },
-      // position: "absolute",
-      // bottom: 35,
+      marginBottom: 15,
     },
     waveFormContainer: {
-      maxWidth: useWindowDimensions().width * 0.65,
+      maxWidth: useWindowDimensions().width * 0.6,
       flexDirection: "row",
       alignItems: "center",
-      position: "absolute",
-      left: 15,
+      marginLeft: 10,
     },
     waveDivider: {
       width: 2,
-      height: 75,
-      backgroundColor: "red",
+      height: 60,
+      backgroundColor: "#666",
       borderRadius: 15,
       marginHorizontal: 2,
     },
     waveContainer: {
       flexDirection: "row",
       alignItems: "center",
-      maxWidth: useWindowDimensions().width * 0.3,
-      height: 75,
+      maxWidth: useWindowDimensions().width * 0.28,
+      height: 60,
     },
     rightWave: {
       width: 2,
@@ -425,28 +372,50 @@ const Styles = (
       borderRadius: 15,
       marginHorizontal: 2,
     },
-    buttonOutline: {
-      width: 60,
-      height: 60,
-      borderColor: "#000",
-      borderRadius: 75,
-      borderWidth: 2,
+    recipientContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 15,
+      paddingHorizontal: 10,
+    },
+    recipientLabel: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#333",
+      marginRight: 10,
+    },
+    recipientField: {
+      flex: 1,
+      backgroundColor: "#FFF",
+      borderRadius: 8,
+      paddingHorizontal: 15,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: "#C0C0C0",
+    },
+    recipientName: {
+      fontSize: 16,
+      color: "#333",
+    },
+    holdAndSpeakButton: {
+      width: "100%",
+      height: 180,
+      backgroundColor: "#FF9800",
+      borderRadius: 10,
       alignItems: "center",
       justifyContent: "center",
-      position: "absolute",
-      right: 25,
+      shadowColor: "#000",
+      shadowOpacity: 0.3,
+      shadowOffset: { width: 0, height: 3 },
+      shadowRadius: 5,
+      elevation: 4,
+      alignSelf: "center",
     },
-    button: {
-      width: buttonWidth,
-      height: buttonHeight,
-      borderRadius: buttonRadius,
-      backgroundColor: "red",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    microphone: {
-      fontSize: 20,
+    holdAndSpeakText: {
+      fontSize: 18,
+      fontWeight: "bold",
       color: "#FFF",
+      letterSpacing: 1,
     },
     timeLabel: {
       paddingTop: 15,

@@ -7,7 +7,7 @@ import {
   FlatList,
 } from "react-native";
 // @ts-expect-error
-import { Entypo } from "react-native-vector-icons";
+import { Entypo, FontAwesome } from "react-native-vector-icons";
 import { useProfile } from "../utilities/ProfileProvider";
 import { sortBy } from "lodash";
 import Conversation from "../objects/Conversation";
@@ -144,6 +144,20 @@ const ConversationsScreen = ({
     };
   }, []);
 
+  const getStatusIndicator = (conversation: Conversation) => {
+    // Simple status logic: green if recent message, red if old, gray if no messages
+    const lastMessage = lastMessageFromOtherUser(conversation);
+    if (!lastMessage) {
+      return { icon: "question", color: "#808080" };
+    }
+    const hoursSinceLastMessage = (Date.now() - lastMessage.timestamp.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLastMessage < 24) {
+      return { icon: "check", color: "#4CAF50" };
+    } else {
+      return { icon: "close", color: "#F44336" };
+    }
+  };
+
   const renderConversation = (conversation: Conversation) => {
     const uid: string = conversation.uids.filter(
       (id) => id !== profile?.uid
@@ -151,6 +165,7 @@ const ConversationsScreen = ({
     const otherProfile = profiles.find((p) => p.uid === uid);
 
     const isSelected = selectedConversation === conversation.conversationId;
+    const status = getStatusIndicator(conversation);
 
     if (otherProfile) {
       return (
@@ -182,17 +197,24 @@ const ConversationsScreen = ({
             })
           }
         >
-          <Image
-            style={styles.profilePicture}
-            source={{ uri: otherProfile.profilePicture }}
-          />
+          <View style={styles.statusIndicator}>
+            <View style={[styles.statusCircle, { backgroundColor: status.color }]}>
+              <FontAwesome 
+                name={status.icon} 
+                style={styles.statusIcon} 
+              />
+            </View>
+          </View>
           <View style={styles.textContainer}>
             <Text style={styles.profileName}>
               {otherProfile.name}
             </Text>
-            <Text style={styles.lastMessage}>
-              Last Message: {formatDate(lastMessageTimestamp(conversation))}
-            </Text>
+            <View style={styles.timestampContainer}>
+              <Text style={styles.lastMessage}>
+                {formatDate(lastMessageTimestamp(conversation))}
+              </Text>
+              <FontAwesome name="paper-plane" style={styles.paperPlaneIcon} />
+            </View>
           </View>
           <TouchableOpacity
             style={styles.button}
@@ -202,7 +224,7 @@ const ConversationsScreen = ({
               })
             }
           >
-            <Entypo name="chevron-right" style={styles.icon} />
+            <Entypo name="location" style={styles.targetIcon} />
           </TouchableOpacity>
         </TouchableOpacity>
       );
@@ -225,13 +247,13 @@ export default ConversationsScreen;
 
 const formatDate = (timestamp: Date) => {
   if (isToday(timestamp)) {
-    return "Today " + format(timestamp, "h:mm a");
+    return format(timestamp, "h:mm a");
   } else if (isYesterday(timestamp)) {
-    return "Yesterday " + format(timestamp, "h:mm a");
+    return format(timestamp, "h:mm a");
   } else if (isThisWeek(timestamp)) {
-    return format(timestamp, "EEEE");
+    return format(timestamp, "h:mm a");
   } else {
-    return format(timestamp, "MM/dd/yyyy");
+    return format(timestamp, "h:mm a");
   }
 };
 
@@ -252,33 +274,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     alignItems: "center",
+    backgroundColor: "#FFF",
   },
   selectedConversationContainer: {
     width: "100%",
     height: 90,
     flexDirection: "row",
-    backgroundColor: "#B4D3B2" + "80",
+    backgroundColor: "#FFF9C4",
     paddingHorizontal: 15,
     paddingVertical: 15,
     alignItems: "center",
   },
-  profilePicture: {
-    width: 65,
-    height: 65,
-    borderRadius: 75,
-    marginRight: 10,
+  statusIndicator: {
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusIcon: {
+    fontSize: 12,
+    color: "#FFF",
   },
   textContainer: {
-    height: 75,
+    flex: 1,
     marginLeft: 5,
     justifyContent: "center",
   },
   profileName: {
     fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 4,
+  },
+  timestampContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   lastMessage: {
     fontSize: 14,
+    color: "gray",
+    marginRight: 6,
+  },
+  paperPlaneIcon: {
+    fontSize: 12,
     color: "gray",
   },
   button: {
@@ -289,9 +332,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     right: 0,
   },
-  icon: {
-    fontSize: 30,
-    position: "absolute",
-    right: 20,
+  targetIcon: {
+    fontSize: 24,
+    color: "#666",
   },
 });
