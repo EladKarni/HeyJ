@@ -3,6 +3,8 @@ import {
   Text,
   FlatList,
   Platform,
+  useWindowDimensions,
+  DimensionValue,
 } from "react-native";
 import { createStyles as createConversationScreenStyles } from "../styles/ConversationScreen.styles";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,7 +12,7 @@ import { useProfile } from "../utilities/ProfileProvider";
 import { useConversations } from "../utilities/ConversationsProvider";
 import { useEffect, useRef } from "react";
 import Message from "../objects/Message";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
 import RecordingPlayer from "../components/chat/RecordingPlayer";
 import RecordingPanel from "../components/chat/RecordingPanel";
 import { HeaderBackButton } from "@react-navigation/elements";
@@ -20,10 +22,10 @@ import { useAudioSettings } from "../utilities/AudioSettingsProvider";
 import { useAudioRecording } from "../hooks/useAudioRecording";
 import { useConversationMessages } from "../hooks/useConversationMessages";
 import { useConversationAutoplay } from "../hooks/useConversationAutoplay";
-import { ConversationScreenProps } from "../types/navigation";
+import { ConversationScreenProps, RootStackParamList } from "../types/navigation";
 
 const ConversationScreen = ({ route }: ConversationScreenProps) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const conversationId = route.params.conversationId;
   const { profile } = useProfile();
   const { conversations } = useConversations();
@@ -113,44 +115,6 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         </View>
       );
     }
-  };
-
-  const renderRightWaves = () => {
-    return (
-      <View style={{ flexDirection: "row" }}>
-        {Array.from({ length: 20 }, (_, index) => (
-          <View key={index} style={{ width: 2, height: 15, backgroundColor: "#a2a2a2", borderRadius: 15, marginHorizontal: 2 }} />
-        ))}
-      </View>
-    );
-  };
-
-  const renderLeftWaves = () => {
-    return (
-      <FlatList
-        data={loudness}
-        style={{ width: "100%" }}
-        horizontal
-        contentContainerStyle={[
-          {
-            flexDirection: "row",
-            alignItems: "center",
-            maxWidth: useWindowDimensions().width * 0.28,
-            height: 60,
-            justifyContent: "flex-end",
-            paddingLeft: 0,
-          },
-        ]}
-        renderItem={({ item, index }) => {
-          return (
-            <View
-              key={index}
-              style={{ width: 2, height: item as DimensionValue, backgroundColor: "#000", borderRadius: 15, marginHorizontal: 2 }}
-            />
-          );
-        }}
-      />
-    );
   };
 
   const renderSection = ({
