@@ -28,17 +28,23 @@ import {
   RecordingPresets
 } from "expo-audio";
 import RecordingPlayer from "../components/chat/RecordingPlayer";
+import RecordingPanel from "../components/chat/RecordingPanel";
 // @ts-expect-error
 import { FontAwesome } from "react-native-vector-icons";
 import { HeaderBackButton } from "@react-navigation/elements";
 import { sendMessage } from "../utilities/SendMessage";
 import { updateLastRead } from "../utilities/UpdateConversation";
+import { useAudioSettings } from "../utilities/AudioSettingsProvider";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { documentDirectory, createDownloadResumable } from "expo-file-system/legacy";
+import UUID from "react-native-uuid";
 
 const ConversationScreen = ({ route }: { route: any }) => {
   const navigation = useNavigation();
   const conversationId = route.params.conversationId;
   const { profile, conversations, profiles } = useProfile();
   const insets = useSafeAreaInsets();
+  const { autoplay } = useAudioSettings();
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [sortedMessages, setSortedMessages] = useState<
@@ -322,43 +328,44 @@ const ConversationScreen = ({ route }: { route: any }) => {
   const styles = Styles(width, height, radius, insets);
 
   const [currentUri, setCurrentUri] = useState("");
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
   const renderMessage = (message: Message) => {
     if (message.uid === otherProfile?.uid) {
+      // Incoming message - align left with avatar on left
       return (
-        <View style={styles.incomingContainer}>
-          <Image
-            style={styles.incomingProfilePicture}
-            source={{ uri: otherProfile.profilePicture }}
+        <View style={styles.messageContainer}>
+          <RecordingPlayer
+            uri={message.audioUrl}
+            currentUri={currentUri}
+            setCurrentUri={setCurrentUri}
+            messageId={message.messageId}
+            senderUid={message.uid}
+            currentUserUid={profile!.uid}
+            isRead={message.isRead}
+            timestamp={message.timestamp}
+            profilePicture={otherProfile.profilePicture}
+            isIncoming={true}
+            autoPlay={autoplay && !message.isRead && isAutoPlaying}
+            onPlaybackFinished={isAutoPlaying ? playNextUnheardMessage : undefined}
           />
-          <View style={styles.incomingMessage}>
-            <RecordingPlayer
-              uri={message.audioUrl}
-              currentUri={currentUri}
-              setCurrentUri={setCurrentUri}
-              messageId={message.messageId}
-              senderUid={message.uid}
-              currentUserUid={profile!.uid}
-            />
-          </View>
         </View>
       );
     } else {
+      // Outgoing message - align right with avatar on right
       return (
-        <View style={styles.outgoingContainer}>
-          <View style={styles.outgoingMessage}>
-            <RecordingPlayer
-              uri={message.audioUrl}
-              currentUri={currentUri}
-              setCurrentUri={setCurrentUri}
-              messageId={message.messageId}
-              senderUid={message.uid}
-              currentUserUid={profile!.uid}
-            />
-          </View>
-          <Image
-            style={styles.outgoingProfilePicture}
-            source={{ uri: profile!.profilePicture }}
+        <View style={styles.messageContainer}>
+          <RecordingPlayer
+            uri={message.audioUrl}
+            currentUri={currentUri}
+            setCurrentUri={setCurrentUri}
+            messageId={message.messageId}
+            senderUid={message.uid}
+            currentUserUid={profile!.uid}
+            isRead={message.isRead}
+            timestamp={message.timestamp}
+            profilePicture={profile!.profilePicture}
+            isIncoming={false}
           />
         </View>
       );
@@ -366,11 +373,13 @@ const ConversationScreen = ({ route }: { route: any }) => {
   };
 
   const renderRightWaves = () => {
-    const waves = Array.from({ length: 20 }, (_, index) => (
-      <View key={index} style={styles.rightWave} />
-    ));
-
-    return waves;
+    return (
+      <View style={{ flexDirection: "row" }}>
+        {Array.from({ length: 20 }, (_, index) => (
+          <View key={index} style={{ width: 2, height: 15, backgroundColor: "#a2a2a2", borderRadius: 15, marginHorizontal: 2 }} />
+        ))}
+      </View>
+    );
   };
 
   const renderLeftWaves = () => {
@@ -380,8 +389,11 @@ const ConversationScreen = ({ route }: { route: any }) => {
         style={{ width: "100%" }}
         horizontal
         contentContainerStyle={[
-          styles.waveContainer,
           {
+            flexDirection: "row",
+            alignItems: "center",
+            maxWidth: useWindowDimensions().width * 0.28,
+            height: 60,
             justifyContent: "flex-end",
             paddingLeft: 0,
           },
@@ -390,7 +402,7 @@ const ConversationScreen = ({ route }: { route: any }) => {
           return (
             <View
               key={index}
-              style={[styles.leftWave, { height: item as DimensionValue }]}
+              style={{ width: 2, height: item as DimensionValue, backgroundColor: "#000", borderRadius: 15, marginHorizontal: 2 }}
             />
           );
         }}
@@ -407,7 +419,6 @@ const ConversationScreen = ({ route }: { route: any }) => {
   }) => {
     return (
       <View>
-        <Text style={styles.date}>{title}</Text>
         <FlatList
           data={data}
           renderItem={({ item: message }) => renderMessage(message)}
@@ -429,6 +440,63 @@ const ConversationScreen = ({ route }: { route: any }) => {
       updateLastRead(conversation?.conversationId, profile!.uid);
     }
   }, [sortedMessages.length]);
+
+  // Function to find and play the next unheard message
+  const playNextUnheardMessage = () => {
+    if (!autoplay || !conversation || !profile || !otherProfile) {
+      setIsAutoPlaying(false);
+      return;
+    }
+
+    // Find all unheard messages from the other user, sorted by timestamp
+    // Exclude the currently playing message
+    const unheardMessages = conversation.messages
+      .filter(
+        (m) =>
+          m.uid === otherProfile.uid && // From other user
+          !m.isRead && // Not read yet
+          m.audioUrl !== currentUri // Not the currently playing message
+      )
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()); // Sort by timestamp, oldest first
+
+    if (unheardMessages.length > 0) {
+      const nextUnheard = unheardMessages[0];
+      // Small delay to ensure previous message has finished
+      setTimeout(() => {
+        setCurrentUri(nextUnheard.audioUrl);
+      }, 300);
+    } else {
+      setIsAutoPlaying(false);
+    }
+  };
+
+  // Auto-play oldest unheard message when conversation opens and autoplay is enabled
+  useEffect(() => {
+    if (!autoplay || !conversation || !profile || !otherProfile) {
+      return;
+    }
+
+    // Small delay to ensure component is mounted
+    setTimeout(() => {
+      playNextUnheardMessage();
+    }, 500);
+  }, [conversation?.conversationId, autoplay, profile?.uid, otherProfile?.uid]);
+
+  // Monitor when current message finishes playing to auto-play next
+  useEffect(() => {
+    if (!isAutoPlaying || !autoplay || !conversation || !otherProfile) {
+      return;
+    }
+
+    // Check if any message is currently playing by checking if currentUri matches any message
+    const currentMessage = conversation.messages.find(m => m.audioUrl === currentUri);
+    if (!currentMessage) {
+      return;
+    }
+
+    // We'll detect playback completion in RecordingPlayer and trigger next message
+    // This effect will handle the transition
+  }, [currentUri, isAutoPlaying, autoplay, conversation, otherProfile]);
 
   return (
     <View style={styles.container}>
@@ -452,35 +520,13 @@ const ConversationScreen = ({ route }: { route: any }) => {
         }}
         ListEmptyComponent={() => <Text>No Messages</Text>}
       />
-      <View style={styles.recordingContainer}>
-        <View style={styles.waveFormContainer}>
-          {renderLeftWaves()}
-          <View style={styles.waveDivider} />
-          <View style={styles.waveContainer}>{renderRightWaves()}</View>
-        </View>
-        <TouchableOpacity
-          onPressIn={() => {
-            console.log("🔘 Button pressed down - starting recording");
-            startRecording();
-          }}
-          onPressOut={async () => {
-            console.log("🔘 Button released - stopping recording");
-            console.log("   Current state before stop:", {
-              recorderStateIsRecording: recorderState.isRecording,
-              isProcessing: isProcessingRecording.current
-            });
-            await stopRecording();
-            console.log("🔘 Button release handler completed");
-          }}
-          activeOpacity={0.7}
-          style={styles.buttonOutline}
-          disabled={isProcessingRecording.current || recorderState.isRecording === undefined}
-        >
-          <View style={styles.button}>
-            <FontAwesome name="microphone" style={styles.microphone} />
-          </View>
-        </TouchableOpacity>
-      </View>
+      <RecordingPanel
+        onPressIn={startRecording}
+        onPressOut={stopRecording}
+        showTopButtons={true}
+        showRecipient={true}
+        recipientName={otherProfile?.name || "Select a Conversation"}
+      />
     </View>
   );
 };
@@ -510,133 +556,13 @@ const Styles = (
       flex: 1,
     },
     listContainer: {
-      paddingTop: Platform.OS === 'ios' ? insets.top + 50 : 175,
-      paddingBottom: 100,
+      paddingTop: Platform.OS === 'ios' ? insets.top - 25 : 175,
+      paddingBottom: 400,
       justifyContent: "flex-end",
     },
-    date: {
-      alignSelf: "center",
-      marginTop: Platform.OS === 'ios' ? 10 : 0,
-      marginBottom: 5,
-    },
-    incomingContainer: {
+    messageContainer: {
       width: "100%",
-      height: 85,
-      flexDirection: "row",
-      marginHorizontal: 15,
-      alignItems: "center",
-    },
-    incomingMessage: {
-      width: 250,
-      height: 65,
-      borderRadius: 15,
-      backgroundColor: "#B2B2B2",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    incomingProfilePicture: {
-      width: 35,
-      height: 35,
-      borderRadius: 50,
-      marginRight: 5,
-    },
-    lastMessage: {
-      fontSize: 14,
-      color: "gray",
-    },
-    outgoingContainer: {
-      width: "100%",
-      height: 85,
-      flexDirection: "row",
       paddingHorizontal: 15,
-      alignItems: "center",
-      justifyContent: "flex-end",
-    },
-    outgoingProfilePicture: {
-      width: 35,
-      height: 35,
-      borderRadius: 50,
-      marginLeft: 5,
-    },
-    outgoingMessage: {
-      width: 250,
-      height: 65,
-      borderRadius: 15,
-      backgroundColor: "#E9E9E9",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    recordingContainer: {
-      height: 100,
-      width: useWindowDimensions().width * 0.88,
-      flexDirection: "row",
-      backgroundColor: "#E2E2E2",
-      borderRadius: 25,
-      alignSelf: "center",
-      justifyContent: "flex-start",
-      alignItems: "center",
-      shadowColor: "#A2A2A2",
-      shadowOpacity: 0.5,
-      shadowOffset: { width: 3, height: 3 },
-      position: "absolute",
-      bottom: 35,
-    },
-    waveFormContainer: {
-      maxWidth: useWindowDimensions().width * 0.65,
-      flexDirection: "row",
-      alignItems: "center",
-      position: "absolute",
-      left: 15,
-    },
-    waveDivider: {
-      width: 2,
-      height: 75,
-      backgroundColor: "red",
-      borderRadius: 15,
-      marginHorizontal: 2,
-    },
-    waveContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      width: useWindowDimensions().width * 0.3,
-      height: 75,
-    },
-    rightWave: {
-      width: 2,
-      height: 15,
-      backgroundColor: "#a2a2a2",
-      borderRadius: 15,
-      marginHorizontal: 2,
-    },
-    leftWave: {
-      width: 2,
-      height: 15,
-      backgroundColor: "#000",
-      borderRadius: 15,
-      marginHorizontal: 2,
-    },
-    buttonOutline: {
-      width: 60,
-      height: 60,
-      borderColor: "#000",
-      borderRadius: 75,
-      borderWidth: 2,
-      alignItems: "center",
-      justifyContent: "center",
-      position: "absolute",
-      right: 25,
-    },
-    button: {
-      width: buttonWidth,
-      height: buttonHeight,
-      borderRadius: buttonRadius,
-      backgroundColor: "red",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    microphone: {
-      fontSize: 20,
-      color: "#FFF",
     },
   });
 

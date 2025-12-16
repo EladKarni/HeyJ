@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from "react-native";
 import Slider from "@react-native-community/slider";
 // @ts-expect-error
-import { Entypo } from "react-native-vector-icons";
+import { Entypo, FontAwesome } from "react-native-vector-icons";
+import { format, isToday, isYesterday } from "date-fns";
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
@@ -13,6 +14,7 @@ import { documentDirectory, createDownloadResumable } from "expo-file-system/leg
 import UUID from "react-native-uuid";
 import { markMessageAsRead } from "../../utilities/MarkMessageAsRead";
 import { useAudioSettings } from "../../utilities/AudioSettingsProvider";
+import { supabase } from "../../utilities/Supabase";
 
 const RecordingPlayer = ({
   uri,
@@ -21,6 +23,12 @@ const RecordingPlayer = ({
   messageId,
   senderUid,
   currentUserUid,
+  isRead,
+  timestamp,
+  profilePicture,
+  isIncoming,
+  autoPlay,
+  onPlaybackFinished,
 }: {
   uri: string;
   currentUri: string;
@@ -28,12 +36,21 @@ const RecordingPlayer = ({
   messageId: string;
   senderUid: string;
   currentUserUid: string;
+  isRead?: boolean;
+  timestamp?: Date;
+  profilePicture?: string;
+  isIncoming?: boolean;
+  autoPlay?: boolean;
+  onPlaybackFinished?: () => void;
 }) => {
   const [file, setFile] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [localIsRead, setLocalIsRead] = useState(isRead || false);
   const hasMarkedAsRead = useRef(false);
-  const { speakerMode } = useAudioSettings();
+  const hasToggledRead = useRef(false);
+  const hasAutoPlayed = useRef(false);
+  const { speakerMode, autoplay } = useAudioSettings();
 
   // Initialize player - will be set when file loads
   // Use a placeholder that won't cause errors
@@ -44,10 +61,59 @@ const RecordingPlayer = ({
   const [position, setPosition] = useState(0);
 
   const handlePlayStart = () => {
-    // Only mark as read if recipient is playing (not the sender)
-    if (!hasMarkedAsRead.current && currentUserUid !== senderUid) {
+    // Only mark as read if recipient is playing (not the sender) and this is the current message
+    if (!hasMarkedAsRead.current && currentUserUid !== senderUid && currentUri === uri) {
       markMessageAsRead(messageId);
       hasMarkedAsRead.current = true;
+      setLocalIsRead(true);
+    }
+  };
+
+  const toggleReadStatus = async () => {
+    const currentDisplayIsRead = hasToggledRead.current ? localIsRead : (isRead || false);
+
+    console.log("🔘 toggleReadStatus called", {
+      currentUserUid,
+      senderUid,
+      messageId,
+      currentDisplayIsRead,
+      localIsRead,
+      isRead,
+      hasToggledRead: hasToggledRead.current,
+      isFromOtherUser: currentUserUid !== senderUid
+    });
+
+    if (currentUserUid === senderUid) {
+      // Can't toggle read status for your own messages
+      console.log("❌ Cannot toggle - this is your own message");
+      return;
+    }
+
+    const newReadStatus = !currentDisplayIsRead;
+    console.log("✅ Toggling read status from", currentDisplayIsRead, "to", newReadStatus);
+    hasToggledRead.current = true;
+    setLocalIsRead(newReadStatus);
+
+    // Update the database
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ isRead: newReadStatus })
+        .eq("messageId", messageId);
+
+      if (error) {
+        console.error("Error toggling message read status:", error);
+        // Revert on error
+        hasToggledRead.current = false;
+        setLocalIsRead(!newReadStatus);
+      } else {
+        console.log("✅ Successfully updated read status in database");
+      }
+    } catch (error) {
+      console.error("Error toggling message read status:", error);
+      // Revert on error
+      hasToggledRead.current = false;
+      setLocalIsRead(!newReadStatus);
     }
   };
 
@@ -171,8 +237,28 @@ const RecordingPlayer = ({
       }
       // Reset the marked as read flag when switching to a different message
       hasMarkedAsRead.current = false;
+      hasAutoPlayed.current = false;
+    } else if (currentUri === uri && (autoPlay || autoplay) && !hasAutoPlayed.current && currentUserUid !== senderUid) {
+      // Auto-play when this becomes the current message and autoplay is enabled
+      if (isReady && file) {
+        // Audio is already loaded, play immediately
+        hasAutoPlayed.current = true;
+        handlePlayStart();
+        audioPlayer.play();
+      } else if (!isLoading && !file) {
+        // Audio needs to be loaded first, then play
+        hasAutoPlayed.current = true;
+        loadAudio(true); // Pass true to play after loading
+      }
     }
-  }, [currentUri, uri, playerStatus.playing]);
+  }, [currentUri, uri, playerStatus.playing, isReady, file, isLoading, autoPlay, autoplay, currentUserUid, senderUid]);
+
+  // Update local read state when prop changes (but only if we haven't toggled it manually)
+  useEffect(() => {
+    if (!hasToggledRead.current && isRead) {
+      setLocalIsRead(true);
+    }
+  }, [isRead]);
 
   // Sync duration when player is ready (regardless of currentUri)
   useEffect(() => {
@@ -195,6 +281,10 @@ const RecordingPlayer = ({
           setPosition(0);
           audioPlayer.pause();
           audioPlayer.seekTo(0);
+          // Notify parent that playback finished (for autoplay queue)
+          if (onPlaybackFinished && currentUri === uri) {
+            onPlaybackFinished();
+          }
         }
       }, 100);
 
@@ -271,65 +361,322 @@ const RecordingPlayer = ({
 
   const isPlaying = playerStatus.playing && currentUri === uri;
   const showLoading = isLoading && currentUri === uri;
+  const isFromOtherUser = senderUid !== currentUserUid;
+  const showReadStatus = isFromOtherUser;
+  // Use local state if it's been set (toggled), otherwise use the prop
+  // If localIsRead has been explicitly set (not just initialized), use it
+  const displayIsRead = hasToggledRead.current ? localIsRead : (isRead || false);
+
+  const formatTimestamp = (ts?: Date): string => {
+    if (!ts) return "";
+    if (isToday(ts)) {
+      return format(ts, "h:mm a");
+    } else if (isYesterday(ts)) {
+      return "Yesterday " + format(ts, "h:mm a");
+    } else {
+      return format(ts, "MM/dd h:mm a");
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.playContainer}>
-        <TouchableOpacity
-          onPress={pausePlay}
-          style={styles.button}
-          disabled={isLoading}
-          activeOpacity={0.7}
-        >
-          <Entypo
-            name={isPlaying ? "controller-stop" : "controller-play"}
-            size={25}
-            color={isLoading ? "#999" : "#000"}
-          />
-        </TouchableOpacity>
-        <Slider
-          style={{ width: 200, height: 40 }}
-          minimumValue={0}
-          maximumValue={duration || 0}
-          value={position}
-          onValueChange={(value) => {
-            setPosition(value);
-            audioPlayer.seekTo(value / 1000);
-          }}
-          minimumTrackTintColor="#000"
-          maximumTrackTintColor="#A2A2A2"
+    <View style={[styles.wrapper, isIncoming ? styles.wrapperIncoming : styles.wrapperOutgoing]}>
+      {isIncoming && profilePicture && (
+        <Image
+          style={styles.avatar}
+          source={{ uri: profilePicture }}
         />
+      )}
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <View style={styles.leftHeader}>
+            {showReadStatus && (
+              <TouchableOpacity
+                onPress={toggleReadStatus}
+                style={styles.readStatusContainer}
+                activeOpacity={0.7}
+              >
+                <FontAwesome
+                  name={displayIsRead ? "check-circle" : "circle-o"}
+                  size={16}
+                  style={[styles.readIcon, displayIsRead && styles.readIconActive]}
+                />
+              </TouchableOpacity>
+            )}
+            {timestamp && (
+              <>
+                {showReadStatus && <View style={styles.separator} />}
+                <View style={styles.timestampContainer}>
+                  <FontAwesome name="clock-o" size={12} style={styles.timestampIcon} />
+                  <Text style={styles.timestamp}>{formatTimestamp(timestamp) || ""}</Text>
+                </View>
+              </>
+            )}
+          </View>
+          {duration && (
+            <View style={styles.durationBadge}>
+              <FontAwesome name="headphones" size={12} style={styles.durationIcon} />
+              <Text style={styles.durationText}>{formatTime(duration)}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.playContainer}>
+          <TouchableOpacity
+            onPress={pausePlay}
+            style={[styles.button, isPlaying && styles.buttonActive]}
+            disabled={isLoading || !isReady}
+            activeOpacity={0.7}
+          >
+            <Entypo
+              name={isPlaying ? "pause" : "controller-play"}
+              size={28}
+              color={isLoading || !isReady ? "#999" : isPlaying ? "#FFF" : "#000"}
+            />
+          </TouchableOpacity>
+          <View style={styles.sliderContainer}>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={duration || 1}
+              value={position}
+              onValueChange={(value) => {
+                setPosition(value);
+                audioPlayer.seekTo(value / 1000);
+              }}
+              minimumTrackTintColor={isPlaying ? "#4CAF50" : "#000"}
+              maximumTrackTintColor="#E0E0E0"
+              thumbTintColor={isPlaying ? "#4CAF50" : "#000"}
+              disabled={!isReady || !duration}
+            />
+            {showLoading && (
+              <View style={styles.loadingOverlay}>
+                <Text style={styles.loadingText}>Loading...</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        {isPlaying && (
+          <View style={styles.footerRow}>
+            <View style={styles.playingIndicator}>
+              <View style={styles.playingDot} />
+              <Text style={styles.playingText}>Playing</Text>
+            </View>
+          </View>
+        )}
       </View>
-      <View style={styles.timeContainer}>
-        <Text>{formatTime(position)}</Text>
-        <Text>{duration ? formatTime(duration - position) : "--"}</Text>
-      </View>
+      {!isIncoming && profilePicture && (
+        <Image
+          style={styles.avatar}
+          source={{ uri: profilePicture }}
+        />
+      )}
     </View>
   );
 };
 
 export default RecordingPlayer;
 
-const formatTime = (time: number) => {
-  const seconds = Math.floor(time / 1000);
-  return seconds + "s";
+const formatTime = (time: number): string => {
+  if (!time || time < 0) return "0s";
+  const totalSeconds = Math.floor(time / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0) {
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+  return `${seconds}s`;
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    width: "100%",
+    marginVertical: 6,
+  },
+  wrapperIncoming: {
+    justifyContent: "flex-start",
+  },
+  wrapperOutgoing: {
+    justifyContent: "flex-end",
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    marginTop: 4,
+  },
   container: {
-    marginVertical: 15,
+    flex: 1,
+    marginHorizontal: 10,
+    padding: 16,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#E5E5E5",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+    minWidth: 200,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E8E8",
+  },
+  leftHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  readStatusContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 4,
+  },
+  readIcon: {
+    color: "#999",
+  },
+  readIconActive: {
+    color: "#4CAF50",
+  },
+  separator: {
+    width: 1,
+    height: 16,
+    backgroundColor: "#D0D0D0",
+  },
+  timestampContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  timestampIcon: {
+    color: "#999",
+  },
+  timestamp: {
+    fontSize: 11,
+    color: "#666",
+    fontWeight: "500",
+  },
+  durationBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#E8E8E8",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D0D0D0",
+  },
+  durationIcon: {
+    color: "#666",
+  },
+  durationText: {
+    fontSize: 12,
+    color: "#333",
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   playContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
+    gap: 12,
   },
   button: {
-    paddingRight: 5,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFF",
+    borderWidth: 2,
+    borderColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  buttonActive: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#45a049",
+  },
+  sliderContainer: {
+    flex: 1,
+    position: "relative",
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 4,
+  },
+  loadingText: {
+    fontSize: 10,
+    color: "#666",
+    fontWeight: "500",
+  },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
   },
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 6,
+  },
+  timeLabel: {
+    fontSize: 11,
+    color: "#999",
+    fontWeight: "500",
+  },
+  timeText: {
+    fontSize: 12,
+    color: "#333",
+    fontWeight: "600",
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  playingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 10,
+  },
+  playingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#4CAF50",
+  },
+  playingText: {
+    fontSize: 10,
+    color: "#4CAF50",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
 });
 
