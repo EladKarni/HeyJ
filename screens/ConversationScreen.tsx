@@ -2,18 +2,13 @@ import {
   View,
   Text,
   FlatList,
-  Platform,
-  useWindowDimensions,
-  DimensionValue,
 } from "react-native";
 import { createStyles as createConversationScreenStyles } from "../styles/ConversationScreen.styles";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProfile } from "../utilities/ProfileProvider";
 import { useConversations } from "../utilities/ConversationsProvider";
 import { useEffect, useRef } from "react";
-import Message from "../objects/Message";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
-import RecordingPlayer from "../components/chat/RecordingPlayer";
 import RecordingPanel from "../components/chat/RecordingPanel";
 import { HeaderBackButton } from "@react-navigation/elements";
 import { sendMessage } from "../utilities/SendMessage";
@@ -23,6 +18,8 @@ import { useAudioRecording } from "../hooks/useAudioRecording";
 import { useConversationMessages } from "../hooks/useConversationMessages";
 import { useConversationAutoplay } from "../hooks/useConversationAutoplay";
 import { ConversationScreenProps, RootStackParamList } from "../types/navigation";
+import MessageSection from "../components/chat/MessageSection";
+import Message from "../objects/Message";
 
 const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -75,48 +72,6 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
 
   const styles = createConversationScreenStyles(width, height, radius, insets);
 
-  const renderMessage = (message: Message) => {
-    if (message.uid === otherProfile?.uid) {
-      // Incoming message - align left with avatar on left
-      return (
-        <View style={styles.messageContainer}>
-          <RecordingPlayer
-            uri={message.audioUrl}
-            currentUri={currentUri}
-            setCurrentUri={setCurrentUri}
-            messageId={message.messageId}
-            senderUid={message.uid}
-            currentUserUid={profile!.uid}
-            isRead={message.isRead}
-            timestamp={message.timestamp}
-            profilePicture={otherProfile.profilePicture}
-            isIncoming={true}
-            autoPlay={autoplay && !message.isRead && isAutoPlaying}
-            onPlaybackFinished={isAutoPlaying ? playNextUnreadMessage : undefined}
-          />
-        </View>
-      );
-    } else {
-      // Outgoing message - align right with avatar on right
-      return (
-        <View style={styles.messageContainer}>
-          <RecordingPlayer
-            uri={message.audioUrl}
-            currentUri={currentUri}
-            setCurrentUri={setCurrentUri}
-            messageId={message.messageId}
-            senderUid={message.uid}
-            currentUserUid={profile!.uid}
-            isRead={message.isRead}
-            timestamp={message.timestamp}
-            profilePicture={profile!.profilePicture}
-            isIncoming={false}
-          />
-        </View>
-      );
-    }
-  };
-
   const renderSection = ({
     title,
     data,
@@ -124,13 +79,22 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
     title: string;
     data: Message[];
   }) => {
+    if (!profile) return null;
+    
     return (
-      <View>
-        <FlatList
-          data={data}
-          renderItem={({ item: message }) => renderMessage(message)}
-        />
-      </View>
+      <MessageSection
+        title={title}
+        data={data}
+        currentUri={currentUri}
+        setCurrentUri={setCurrentUri}
+        currentUserUid={profile.uid}
+        otherProfile={otherProfile}
+        currentUserProfile={profile}
+        autoplay={autoplay}
+        isAutoPlaying={isAutoPlaying}
+        playNextUnreadMessage={playNextUnreadMessage}
+        messageContainerStyle={styles.messageContainer}
+      />
     );
   };
 

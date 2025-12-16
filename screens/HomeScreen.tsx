@@ -10,6 +10,8 @@ import { useFriends } from "../utilities/FriendsProvider";
 import ConversationsScreen from "./ConversationsScreen";
 import { sendMessage } from "../utilities/SendMessage";
 import { useNavigation } from "@react-navigation/native";
+import { NavigationProp } from "@react-navigation/native";
+import { RootStackParamList } from "../types/navigation";
 import RecordingPanel from "../components/chat/RecordingPanel";
 import { supabase } from "../utilities/Supabase";
 import { useAudioRecording } from "../hooks/useAudioRecording";
@@ -20,7 +22,7 @@ const HomeScreen = () => {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:19',message:'HomeScreen rendering',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
   // #endregion
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   let profile, getProfile, conversations, profiles, friends, getFriends;
   try {
     const profileContext = useProfile();

@@ -102,7 +102,13 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
         },
         async (payload) => {
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:103',message:'profile real-time update received',data:{eventType:payload.eventType,userId:user.id,newConversations:payload.new?.conversations||[],oldConversations:payload.old?.conversations||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          const newConversations = (payload.new && typeof payload.new === 'object' && 'conversations' in payload.new && Array.isArray(payload.new.conversations)) 
+            ? payload.new.conversations 
+            : [];
+          const oldConversations = (payload.old && typeof payload.old === 'object' && 'conversations' in payload.old && Array.isArray(payload.old.conversations)) 
+            ? payload.old.conversations 
+            : [];
+          fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:103',message:'profile real-time update received',data:{eventType:payload.eventType,userId:user.id,newConversations,oldConversations},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
           // #endregion
           await supabase
             .from("profiles")

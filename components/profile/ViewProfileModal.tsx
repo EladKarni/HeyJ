@@ -12,8 +12,6 @@ import {
   TextInput,
 } from "react-native";
 import Profile from "../../objects/Profile";
-// @ts-expect-error
-import { AntDesign, MaterialCommunityIcons } from "react-native-vector-icons";
 import {
   MediaType,
   launchImageLibraryAsync,
@@ -29,8 +27,9 @@ import {
 } from "@expo/react-native-action-sheet";
 import Conversation from "../../objects/Conversation";
 import UUID from "react-native-uuid";
-import AddFriendModal from "./AddFriendModal";
 import { findOrCreateConversation } from "../../utilities/FindOrCreateConversation";
+import ProfileImageSection from "./ProfileImageSection";
+import ProfileButtons from "./ProfileButtons";
 
 const ViewProfileModal = () => {
   const {
@@ -44,8 +43,6 @@ const ViewProfileModal = () => {
   const { friendRequests, checkFriendshipStatus } = useFriends();
 
   const styles = Styles();
-
-  const [showAddFriend, setShowAddFriend] = useState(false);
 
   const getProfilePic = async () => {
     const { status } = await requestMediaLibraryPermissionsAsync();
@@ -240,28 +237,17 @@ const ViewProfileModal = () => {
           }}
           onPress={() => {
             setViewProfile(false);
-            setShowAddFriend(false);
           }}
         >
           <TouchableWithoutFeedback style={styles.modal}>
             <View style={styles.modalSheet}>
               <Text style={styles.modalTitle}>Profile Details</Text>
 
-              <TouchableOpacity onPress={getProfilePic}>
-                <Image
-                  style={styles.image}
-                  source={{
-                    uri: profile?.profilePicture,
-                  }}
-                />
-                <View style={styles.plusButton}>
-                  <AntDesign
-                    name="plus"
-                    color={styles.modalSheet.backgroundColor}
-                    size={24}
-                  />
-                </View>
-              </TouchableOpacity>
+              <ProfileImageSection
+                profilePicture={profile?.profilePicture || ""}
+                onPress={getProfilePic}
+                styles={styles}
+              />
 
               <Text style={styles.labelText}>
                 {profile?.name || "---"}
@@ -269,30 +255,7 @@ const ViewProfileModal = () => {
 
               <View style={styles.divider} />
 
-              {/* Buttons Container */}
-              <View style={styles.buttonsContainer}>
-                <TouchableOpacity
-                  style={styles.addFriendButton}
-                  onPress={() => setShowAddFriend(true)}
-                >
-                  <MaterialCommunityIcons name="account-plus" size={24} color="#000" />
-                  <Text style={styles.addFriendButtonText}>Add Friend by Code</Text>
-                </TouchableOpacity>
-                
-                <AddFriendModal
-                  visible={showAddFriend}
-                  onClose={() => setShowAddFriend(false)}
-                />
-
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={() => {
-                    supabase.auth.signOut();
-                  }}
-                >
-                  <Text style={styles.saveLabel}>Sign Out</Text>
-                </TouchableOpacity>
-              </View>
+              <ProfileButtons styles={styles} />
             </View>
           </TouchableWithoutFeedback>
         </TouchableOpacity>

@@ -1,13 +1,5 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  FlatList,
-} from "react-native";
+import { View, FlatList } from "react-native";
 import { styles } from "../styles/ConversationsScreen.styles";
-// @ts-expect-error
-import { Entypo, FontAwesome } from "react-native-vector-icons";
 import { useProfile } from "../utilities/ProfileProvider";
 import { useConversations } from "../utilities/ConversationsProvider";
 import { useFriends } from "../utilities/FriendsProvider";
@@ -15,9 +7,7 @@ import Conversation from "../objects/Conversation";
 import FriendRequest from "../objects/FriendRequest";
 import Profile from "../objects/Profile";
 import { useEffect } from "react";
-import { isBefore } from "date-fns";
-import { formatDate } from "../utilities/dateUtils";
-import { lastMessageTimestamp, lastMessageFromOtherUser, getStatusIndicator, getOtherUserUid } from "../utilities/conversationUtils";
+import { getOtherUserUid } from "../utilities/conversationUtils";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types/navigation";
@@ -27,7 +17,8 @@ import { useIncomingRequesterProfiles } from "../hooks/useProfileData";
 import { useConversationListStore, ConversationListItem } from "../stores/useConversationListStore";
 import { useAudioPlaybackStore } from "../stores/useAudioPlaybackStore";
 import { useFriendRequestActionsStore } from "../stores/useFriendRequestActionsStore";
-import { updateLastRead } from "../utilities/UpdateConversation";
+import FriendRequestItem from "../components/conversations/FriendRequestItem";
+import ConversationItem from "../components/conversations/ConversationItem";
 
 const ConversationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -119,124 +110,53 @@ const ConversationsScreen = () => {
     return cleanup;
   }, [profile, setSelectedConversation, initializeNotificationHandlers, audioPlayer]);
 
-  const renderFriendRequest = (
-    request: FriendRequest,
-    requesterProfile: Profile
-  ) => {
-    return (
-      <View style={styles.friendRequestContainer}>
-        <Image
-          style={styles.friendRequestProfilePicture}
-          source={{ uri: requesterProfile.profilePicture }}
-        />
-        <View style={styles.friendRequestTextContainer}>
-          <Text style={styles.friendRequestName}>{requesterProfile.name}</Text>
-          <Text style={styles.friendRequestLabel}>Friend Request</Text>
-        </View>
-        <View style={styles.friendRequestButtons}>
-          <TouchableOpacity
-            style={[styles.friendRequestButton, styles.acceptButton]}
-            onPress={() =>
-              handleAccept(
-                request,
-                requesterProfile,
-                acceptFriendRequest,
-                getFriendRequests,
-                getFriends
-              )
-            }
-          >
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.friendRequestButton, styles.declineButton]}
-            onPress={() =>
-              handleDecline(request.id, rejectFriendRequest, getFriendRequests)
-            }
-          >
-            <Text style={styles.declineButtonText}>Decline</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  const renderConversation = (conversation: Conversation) => {
-    if (!profile) return <View />;
-
-    const otherUserUid = getOtherUserUid(conversation, profile.uid);
-    if (!otherUserUid) return <View />;
-
-    const otherProfile = profiles.find((p) => p.uid === otherUserUid);
-    if (!otherProfile) return <View />;
-
-    const isSelected = selectedConversation === conversation.conversationId;
-    const status = getStatusIndicator(conversation, profile.uid);
-
-    return (
-      <TouchableOpacity
-        style={
-          isSelected
-            ? styles.selectedConversationContainer
-            : styles.conversationContainer
-        }
-        onPress={() => {
-          setSelectedConversation(conversation.conversationId);
-          const lastMessage = lastMessageFromOtherUser(conversation, profile.uid);
-
-          // Play the last message from the other user when tapping the conversation
-          if (lastMessage) {
-            playFromUri(lastMessage.audioUrl, conversation.conversationId, audioPlayer);
-            const lastRead = conversation.lastRead.find((l) => l.uid === profile.uid);
-            // Update last read if this message hasn't been read yet
-            if (!lastRead || isBefore(lastRead.timestamp, lastMessage.timestamp)) {
-              updateLastRead(conversation.conversationId, profile.uid);
-            }
-          }
-        }}
-        onLongPress={() =>
-          navigation.navigate("Conversation", {
-            conversationId: conversation.conversationId,
-          })
-        }
-      >
-        <View style={styles.statusIndicator}>
-          <View style={[styles.statusCircle, { backgroundColor: status.color }]}>
-            <FontAwesome name={status.icon} style={styles.statusIcon} />
-          </View>
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.profileName}>{otherProfile.name}</Text>
-          <View style={styles.timestampContainer}>
-            <Text style={styles.lastMessage}>
-              {conversation.messages.length === 0
-                ? "New conversation"
-                : formatDate(lastMessageTimestamp(conversation))}
-            </Text>
-            {conversation.messages.length > 0 && (
-              <FontAwesome name="paper-plane" style={styles.paperPlaneIcon} />
-            )}
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            navigation.navigate("Conversation", {
-              conversationId: conversation.conversationId,
-            })
-          }
-        >
-          <Entypo name="chat" style={styles.targetIcon} />
-        </TouchableOpacity>
-      </TouchableOpacity>
-    );
-  };
-
   const renderItem = ({ item }: { item: ConversationListItem }) => {
     if (item.type === "friendRequest") {
-      return renderFriendRequest(item.data, item.requesterProfile);
+      return (
+        <FriendRequestItem
+          request={item.data}
+          requesterProfile={item.requesterProfile}
+          onAccept={() =>
+            handleAccept(
+              item.data,
+              item.requesterProfile,
+              acceptFriendRequest,
+              getFriendRequests,
+              getFriends
+            )
+          }
+          onDecline={() =>
+            handleDecline(item.data.id, rejectFriendRequest, getFriendRequests)
+          }
+        />
+      );
     } else {
-      return renderConversation(item.data);
+      if (!profile) return <View />;
+
+      const otherUserUid = getOtherUserUid(item.data, profile.uid);
+      if (!otherUserUid) return <View />;
+
+      const otherProfile = profiles.find((p) => p.uid === otherUserUid);
+      if (!otherProfile) return <View />;
+
+      const isSelected = selectedConversation === item.data.conversationId;
+
+      return (
+        <ConversationItem
+          conversation={item.data}
+          currentUserProfile={profile}
+          otherProfile={otherProfile}
+          isSelected={isSelected}
+          onPress={() => setSelectedConversation(item.data.conversationId)}
+          onLongPress={() =>
+            navigation.navigate("Conversation", {
+              conversationId: item.data.conversationId,
+            })
+          }
+          playFromUri={playFromUri}
+          audioPlayer={audioPlayer}
+        />
+      );
     }
   };
 

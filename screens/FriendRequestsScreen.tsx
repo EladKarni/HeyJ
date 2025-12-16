@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  Image,
   Alert,
 } from "react-native";
 import { styles } from "../styles/FriendRequestsScreen.styles";
 import { useProfile } from "../utilities/ProfileProvider";
 import { useFriends } from "../utilities/FriendsProvider";
 import FriendRequest from "../objects/FriendRequest";
-import Profile from "../objects/Profile";
 // @ts-expect-error
 import { Ionicons } from "react-native-vector-icons";
 import { useRequesterProfiles } from "../hooks/useProfileData";
 import { FriendRequestsScreenProps } from "../types/navigation";
+import IncomingRequestItem from "../components/friendRequests/IncomingRequestItem";
+import OutgoingRequestItem from "../components/friendRequests/OutgoingRequestItem";
+import FriendRequestsEmpty from "../components/friendRequests/FriendRequestsEmpty";
 
 const FriendRequestsScreen = ({ navigation }: FriendRequestsScreenProps) => {
   const { profile } = useProfile();
@@ -112,45 +113,14 @@ const FriendRequestsScreen = ({ navigation }: FriendRequestsScreenProps) => {
       return null;
     }
 
-    // Check if request was updated (indicates it might have been rejected before)
-    const wasUpdated = item.updatedAt.getTime() > item.createdAt.getTime() + 1000; // 1 second buffer
-
     return (
-      <View style={styles.requestItem}>
-        <Image
-          style={styles.profilePicture}
-          source={{ uri: requesterProfile.profilePicture }}
-        />
-        <View style={styles.requestInfo}>
-          <Text style={styles.name}>{requesterProfile.name}</Text>
-          <Text style={styles.userCode}>{requesterProfile.userCode}</Text>
-          {wasUpdated && (
-            <Text style={styles.warningText}>
-              This user has sent you a request before
-            </Text>
-          )}
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.acceptButton]}
-            onPress={() => handleAccept(item.id)}
-          >
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.rejectButton]}
-            onPress={() => handleReject(item.id)}
-          >
-            <Text style={styles.rejectButtonText}>Reject</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.blockButton, wasUpdated && styles.blockButtonProminent]}
-            onPress={() => handleBlock(item.id)}
-          >
-            <Text style={styles.blockButtonText}>Block</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <IncomingRequestItem
+        request={item}
+        requesterProfile={requesterProfile}
+        onAccept={() => handleAccept(item.id)}
+        onReject={() => handleReject(item.id)}
+        onBlock={() => handleBlock(item.id)}
+      />
     );
   };
 
@@ -161,23 +131,11 @@ const FriendRequestsScreen = ({ navigation }: FriendRequestsScreenProps) => {
     }
 
     return (
-      <View style={styles.requestItem}>
-        <Image
-          style={styles.profilePicture}
-          source={{ uri: addresseeProfile.profilePicture }}
-        />
-        <View style={styles.requestInfo}>
-          <Text style={styles.name}>{addresseeProfile.name}</Text>
-          <Text style={styles.userCode}>{addresseeProfile.userCode}</Text>
-          <Text style={styles.pendingText}>Pending...</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
-          onPress={() => handleCancel(item.id)}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
+      <OutgoingRequestItem
+        request={item}
+        addresseeProfile={addresseeProfile}
+        onCancel={() => handleCancel(item.id)}
+      />
     );
   };
 
@@ -194,10 +152,7 @@ const FriendRequestsScreen = ({ navigation }: FriendRequestsScreenProps) => {
       </View>
 
       {incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="person-add-outline" size={64} color="#999" />
-          <Text style={styles.emptyText}>No friend requests</Text>
-        </View>
+        <FriendRequestsEmpty />
       ) : (
         <>
           {incomingRequests.length > 0 && (

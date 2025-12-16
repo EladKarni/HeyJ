@@ -1,9 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from "react-native";
-import Slider from "@react-native-community/slider";
-// @ts-expect-error
-import { Entypo, FontAwesome } from "react-native-vector-icons";
-import { formatMessageTimestamp } from "../../utilities/dateUtils";
+import { View, StyleSheet, Platform, Image } from "react-native";
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
@@ -14,6 +10,9 @@ import { markMessageAsRead } from "../../utilities/MarkMessageAsRead";
 import { useAudioSettings } from "../../utilities/AudioSettingsProvider";
 import { supabase } from "../../utilities/Supabase";
 import { loadAudioFile } from "../../services/audioService";
+import RecordingPlayerHeader from "./RecordingPlayerHeader";
+import RecordingPlayerControls from "./RecordingPlayerControls";
+import PlayingIndicator from "./PlayingIndicator";
 
 const RecordingPlayer = ({
   uri,
@@ -432,81 +431,28 @@ const RecordingPlayer = ({
         />
       )}
       <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <View style={styles.leftHeader}>
-            {showReadStatus && (
-              <TouchableOpacity
-                onPress={toggleReadStatus}
-                style={styles.readStatusContainer}
-                activeOpacity={0.7}
-              >
-                <FontAwesome
-                  name={displayIsRead ? "check-circle" : "circle-o"}
-                  size={16}
-                  style={[styles.readIcon, displayIsRead && styles.readIconActive]}
-                />
-              </TouchableOpacity>
-            )}
-            {timestamp && (
-              <>
-                {showReadStatus && <View style={styles.separator} />}
-                <View style={styles.timestampContainer}>
-                  <FontAwesome name="clock-o" size={12} style={styles.timestampIcon} />
-                  <Text style={styles.timestamp}>{formatMessageTimestamp(timestamp) || ""}</Text>
-                </View>
-              </>
-            )}
-          </View>
-          {duration != null && duration > 0 && (
-            <View style={styles.durationBadge}>
-              <FontAwesome name="headphones" size={12} style={styles.durationIcon} />
-              <Text style={styles.durationText}>{formatTime(duration)}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.playContainer}>
-          <TouchableOpacity
-            onPress={pausePlay}
-            style={[styles.button, isPlaying && styles.buttonActive]}
-            disabled={isLoading || !isReady}
-            activeOpacity={0.7}
-          >
-            <Entypo
-              name={isPlaying ? "pause-solid" : "controller-play"}
-              size={28}
-              color={isLoading || !isReady ? "#999" : isPlaying ? "#FFF" : "#000"}
-            />
-          </TouchableOpacity>
-          <View style={styles.sliderContainer}>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={duration || 1}
-              value={position}
-              onValueChange={(value) => {
-                setPosition(value);
-                audioPlayer.seekTo(value / 1000);
-              }}
-              minimumTrackTintColor={isPlaying ? "#4CAF50" : "#000"}
-              maximumTrackTintColor="#E0E0E0"
-              thumbTintColor={isPlaying ? "#4CAF50" : "#000"}
-              disabled={!isReady || !duration}
-            />
-            {showLoading && (
-              <View style={styles.loadingOverlay}>
-                <Text style={styles.loadingText}>Loading...</Text>
-              </View>
-            )}
-          </View>
-        </View>
-        {isPlaying && (
-          <View style={styles.footerRow}>
-            <View style={styles.playingIndicator}>
-              <View style={styles.playingDot} />
-              <Text style={styles.playingText}>Playing</Text>
-            </View>
-          </View>
-        )}
+        <RecordingPlayerHeader
+          showReadStatus={showReadStatus}
+          displayIsRead={displayIsRead}
+          onToggleReadStatus={toggleReadStatus}
+          timestamp={timestamp}
+          duration={duration}
+          styles={styles}
+        />
+        <RecordingPlayerControls
+          isPlaying={isPlaying}
+          isLoading={isLoading}
+          isReady={isReady}
+          duration={duration}
+          position={position}
+          onPausePlay={pausePlay}
+          onSeek={(value) => {
+            setPosition(value);
+            audioPlayer.seekTo(value / 1000);
+          }}
+          styles={styles}
+        />
+        {isPlaying && <PlayingIndicator styles={styles} />}
       </View>
       {!isIncoming && profilePicture && (
         <Image
@@ -519,17 +465,6 @@ const RecordingPlayer = ({
 };
 
 export default RecordingPlayer;
-
-const formatTime = (time: number): string => {
-  if (!time || time < 0) return "0s";
-  const totalSeconds = Math.floor(time / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (minutes > 0) {
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  }
-  return `${seconds}s`;
-};
 
 const styles = StyleSheet.create({
   wrapper: {

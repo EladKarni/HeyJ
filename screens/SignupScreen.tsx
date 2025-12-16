@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { styles } from "../styles/SignupScreen.styles";
 // @ts-expect-error
-import { AntDesign, Ionicons } from "react-native-vector-icons";
+import { Ionicons } from "react-native-vector-icons";
 import {
   ImagePickerAsset,
   MediaType,
@@ -24,6 +24,9 @@ import { signUpWithEmail } from "../utilities/AuthHelper";
 import { supabase } from "../utilities/Supabase";
 import { useFormValidation } from "../hooks/useFormValidation";
 import { SignupScreenProps } from "../types/navigation";
+import RequirementItem from "../components/auth/RequirementItem";
+import PasswordStrengthIndicator from "../components/auth/PasswordStrengthIndicator";
+import ProfilePicturePicker from "../components/auth/ProfilePicturePicker";
 
 const SignupScreen = ({ navigation }: SignupScreenProps) => {
   const [fullName, setFullName] = useState("");
@@ -268,21 +271,11 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
           <Text style={styles.subtitle}>Join HeyJ today</Text>
 
           {/* Profile Picture */}
-          <TouchableOpacity onPress={getProfilePic} style={styles.imageContainer}>
-            <Image
-              style={styles.profileImage}
-              source={{
-                uri: profileImage?.uri || defaultProfileImage,
-              }}
-            />
-            <View style={styles.imageOverlay}>
-              <AntDesign name="camera" size={30} color="#fff" />
-              <Text style={styles.imageOverlayText}>
-                {profileImage ? "Change Photo" : "Add Photo"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.optionalText}>(Optional)</Text>
+          <ProfilePicturePicker
+            profileImage={profileImage}
+            defaultImage={defaultProfileImage}
+            onPress={getProfilePic}
+          />
 
           {/* Full Name Field */}
           <TextInput
@@ -331,54 +324,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
 
           {/* Password Strength Indicator */}
           {password.length > 0 && (
-            <View style={styles.strengthContainer}>
-              <View style={styles.strengthBars}>
-                {[0, 1, 2, 3, 4].map((index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.strengthBar,
-                      index <= passwordStrength.score && {
-                        backgroundColor: passwordStrength.color,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-              <Text
-                style={[
-                  styles.strengthLabel,
-                  { color: passwordStrength.color },
-                ]}
-              >
-                {passwordStrength.label}
-              </Text>
-
-              {/* Requirements Checklist */}
-              <View style={styles.requirementsContainer}>
-                <Text style={styles.requirementsTitle}>Password must have:</Text>
-                <RequirementItem
-                  met={passwordStrength.requirements.length}
-                  text="At least 12 characters"
-                />
-                <RequirementItem
-                  met={passwordStrength.requirements.uppercase}
-                  text="One uppercase letter (A-Z)"
-                />
-                <RequirementItem
-                  met={passwordStrength.requirements.lowercase}
-                  text="One lowercase letter (a-z)"
-                />
-                <RequirementItem
-                  met={passwordStrength.requirements.number}
-                  text="One number (0-9)"
-                />
-                <RequirementItem
-                  met={passwordStrength.requirements.special}
-                  text="One special character (!@#$%^&*)"
-                />
-              </View>
-            </View>
+            <PasswordStrengthIndicator passwordStrength={passwordStrength} />
           )}
 
           {/* Confirm Password */}
@@ -432,18 +378,5 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
     </KeyboardAvoidingView>
   );
 };
-
-const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
-  <View style={styles.requirementItem}>
-    <Ionicons
-      name={met ? "checkmark-circle" : "ellipse-outline"}
-      size={16}
-      color={met ? "#00cc44" : "#999"}
-    />
-    <Text style={[styles.requirementText, met && styles.requirementTextMet]}>
-      {text}
-    </Text>
-  </View>
-);
 
 export default SignupScreen;

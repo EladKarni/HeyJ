@@ -4,16 +4,13 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    FlatList,
     useWindowDimensions,
-    DimensionValue,
 } from "react-native";
-// @ts-expect-error
-import { FontAwesome, MaterialCommunityIcons } from "react-native-vector-icons";
-import { useAudioSettings } from "../../utilities/AudioSettingsProvider";
-import AddFriendModal from "../profile/AddFriendModal";
-import DropdownPicker from "react-native-dropdown-picker";
 import Profile from "../../objects/Profile";
+import TopButtonsRow from "./TopButtonsRow";
+import RecipientSelector from "./RecipientSelector";
+import WaveformLeft from "./WaveformLeft";
+import WaveformRight from "./WaveformRight";
 
 interface RecordingPanelProps {
     onPressIn: () => void;
@@ -46,182 +43,45 @@ const RecordingPanel = ({
     renderLeftWaves,
     renderRightWaves,
 }: RecordingPanelProps) => {
-    const { speakerMode, toggleSpeakerMode, autoplay, toggleAutoplay } = useAudioSettings();
     const windowDimensions = useWindowDimensions();
     const styles = Styles(windowDimensions.width);
-    const [showAddFriendModal, setShowAddFriendModal] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    const defaultRenderLeftWaves = () => {
-        return (
-            <FlatList
-                data={loudness}
-                style={{ width: "100%" }}
-                horizontal
-                contentContainerStyle={[
-                    styles.waveContainer,
-                    {
-                        justifyContent: "flex-end",
-                        paddingLeft: 0,
-                    },
-                ]}
-                renderItem={({ item, index }) => {
-                    return (
-                        <View
-                            key={index}
-                            style={[styles.leftWave, { height: item as DimensionValue }]}
-                        />
-                    );
-                }}
-            />
-        );
-    };
-
-    const defaultRenderRightWaves = () => {
-        return (
-            <View style={{ flexDirection: "row" }}>
-                {Array.from({ length: 20 }, (_, index) => (
-                    <View key={index} style={styles.rightWave} />
-                ))}
-            </View>
-        );
-    };
 
     return (
         <View style={styles.selectionContainer}>
             {showTopButtons && (
-                <View style={styles.topButtonRow}>
-                    <View style={styles.buttonGroup}>
-                        <TouchableOpacity
-                            onPress={toggleSpeakerMode}
-                            style={[
-                                styles.speakerButton,
-                                speakerMode && styles.speakerButtonActive,
-                                isCollapsed && styles.buttonCollapsed
-                            ]}
-                            activeOpacity={0.7}
-                        >
-                            <FontAwesome
-                                name="volume-up"
-                                style={[
-                                    styles.speakerIcon,
-                                    speakerMode && styles.speakerIconActive,
-                                    isCollapsed && styles.iconCollapsed
-                                ]}
-                            />
-                            {!isCollapsed && (
-                                <Text style={[
-                                    styles.speakerLabel,
-                                    speakerMode && styles.speakerLabelActive
-                                ]}>
-                                    SPEAKER
-                                </Text>
-                            )}
-                            {speakerMode && !isCollapsed && <View style={styles.speakerIndicator} />}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={toggleAutoplay}
-                            style={[
-                                styles.autoplayButton,
-                                autoplay && styles.autoplayButtonActive,
-                                isCollapsed && styles.buttonCollapsed
-                            ]}
-                            activeOpacity={0.7}
-                        >
-                            <FontAwesome
-                                name="play-circle"
-                                style={[
-                                    styles.autoplayIcon,
-                                    autoplay && styles.autoplayIconActive,
-                                    isCollapsed && styles.iconCollapsed
-                                ]}
-                            />
-                            {!isCollapsed && (
-                                <Text style={[
-                                    styles.autoplayLabel,
-                                    autoplay && styles.autoplayLabelActive
-                                ]}>
-                                    PLAY
-                                </Text>
-                            )}
-                            {autoplay && !isCollapsed && <View style={styles.autoplayIndicator} />}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setShowAddFriendModal(true)}
-                            style={[styles.addFriendButton, isCollapsed && styles.buttonCollapsed]}
-                            activeOpacity={0.7}
-                        >
-                            <MaterialCommunityIcons
-                                name="account-plus"
-                                style={[styles.addFriendIcon, isCollapsed && styles.iconCollapsed]}
-                            />
-                            {!isCollapsed && (
-                                <Text style={styles.addFriendLabel}>
-                                    FRIEND
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity
-                        onPress={() => setIsCollapsed(!isCollapsed)}
-                        style={[styles.collapseButton, isCollapsed && styles.buttonCollapsed]}
-                        activeOpacity={0.7}
-                    >
-                        <FontAwesome
-                            name={isCollapsed ? "plus" : "minus"}
-                            style={[styles.collapseIcon, isCollapsed && styles.iconCollapsed]}
-                        />
-                    </TouchableOpacity>
-                </View>
+                <TopButtonsRow
+                    isCollapsed={isCollapsed}
+                    onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                    styles={styles}
+                />
             )}
-            <AddFriendModal
-                visible={showAddFriendModal}
-                onClose={() => setShowAddFriendModal(false)}
-            />
             {showWaveform && (
                 <View style={styles.recordingContainer}>
                     <View style={styles.waveFormContainer}>
-                        {renderLeftWaves ? renderLeftWaves() : defaultRenderLeftWaves()}
+                        {renderLeftWaves ? renderLeftWaves() : (
+                            <WaveformLeft
+                                loudness={loudness}
+                                waveContainerStyle={styles.waveContainer}
+                                leftWaveStyle={styles.leftWave}
+                            />
+                        )}
                         <View style={styles.waveDivider} />
-                        {renderRightWaves ? renderRightWaves() : defaultRenderRightWaves()}
+                        {renderRightWaves ? renderRightWaves() : (
+                            <WaveformRight rightWaveStyle={styles.rightWave} />
+                        )}
                     </View>
                 </View>
             )}
             {showRecipient && !isCollapsed && (
-                <View style={styles.recipientContainer}>
-                    <Text style={styles.recipientLabel}>To:</Text>
-                    {friends.length > 0 ? (
-                        <View style={styles.dropdownContainer}>
-                            <DropdownPicker
-                                open={dropdownOpen}
-                                value={selectedFriendUid}
-                                items={friends.map((friend) => ({
-                                    label: friend.name,
-                                    value: friend.uid,
-                                }))}
-                                setOpen={setDropdownOpen}
-                                setValue={(callback) => {
-                                    const newValue = typeof callback === 'function' ? callback(selectedFriendUid) : callback;
-                                    if (newValue && onFriendSelected) {
-                                        onFriendSelected(newValue);
-                                    }
-                                }}
-                                placeholder="Select a friend"
-                                style={styles.dropdown}
-                                textStyle={styles.dropdownText}
-                                dropDownContainerStyle={styles.dropdownContainerStyle}
-                                selectedItemLabelStyle={styles.dropdownSelectedText}
-                            />
-                        </View>
-                    ) : (
-                        <View style={styles.recipientField}>
-                            <Text style={styles.recipientName}>
-                                {recipientName || "No friends yet"}
-                            </Text>
-                        </View>
-                    )}
-                </View>
+                <RecipientSelector
+                    recipientName={recipientName}
+                    friends={friends}
+                    selectedFriendUid={selectedFriendUid}
+                    onFriendSelected={onFriendSelected || (() => {})}
+                    styles={styles}
+                />
             )}
             <TouchableOpacity
                 onPressIn={onPressIn}
