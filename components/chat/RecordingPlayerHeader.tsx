@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-// @ts-expect-error
-import { FontAwesome } from "react-native-vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
 import { formatMessageTimestamp } from "../../utilities/dateUtils";
 import { formatTime } from "../../utilities/formatTime";
 

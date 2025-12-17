@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-// @ts-expect-error
-import { MaterialCommunityIcons } from "react-native-vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "../../utilities/Supabase";
 import AddFriendModal from "./AddFriendModal";
 import { useState } from "react";

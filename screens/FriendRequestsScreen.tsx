@@ -10,8 +10,7 @@ import { styles } from "../styles/FriendRequestsScreen.styles";
 import { useProfile } from "../utilities/ProfileProvider";
 import { useFriends } from "../utilities/FriendsProvider";
 import FriendRequest from "../objects/FriendRequest";
-// @ts-expect-error
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRequesterProfiles } from "../hooks/useProfileData";
 import { FriendRequestsScreenProps } from "../types/navigation";
 import IncomingRequestItem from "../components/friendRequests/IncomingRequestItem";

@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity, Image } from "react-native";
-// @ts-expect-error
-import { AntDesign } from "react-native-vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { ImagePickerAsset } from "expo-image-picker";
 import { styles } from "../../styles/SignupScreen.styles";
 

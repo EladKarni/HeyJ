@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-// @ts-expect-error
-import { FontAwesome, MaterialCommunityIcons } from "react-native-vector-icons";
+import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAudioSettings } from "../../utilities/AudioSettingsProvider";
 import AddFriendModal from "../profile/AddFriendModal";
 

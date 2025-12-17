@@ -7,8 +7,7 @@ import OAuthButton from "./components/auth/OAuthButton";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "./utilities/Supabase";
-// @ts-expect-error
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { ProfileProvider, useProfile } from "./utilities/ProfileProvider";
 import { ConversationsProvider } from "./utilities/ConversationsProvider";
 import { FriendsProvider, useFriends } from "./utilities/FriendsProvider";

@@ -10,8 +10,7 @@ import {
   TouchableWithoutFeedback,
   TextInput,
 } from "react-native";
-// @ts-expect-error
-import { MaterialCommunityIcons, Ionicons } from "react-native-vector-icons";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useProfile } from "../../utilities/ProfileProvider";
 import { useFriends } from "../../utilities/FriendsProvider";
 import * as Clipboard from 'expo-clipboard';

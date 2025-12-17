@@ -11,8 +11,7 @@ import {
   Image,
 } from "react-native";
 import { styles } from "../styles/SignupScreen.styles";
-// @ts-expect-error
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ImagePickerAsset,
   MediaType,

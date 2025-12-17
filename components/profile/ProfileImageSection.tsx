@@ -1,6 +1,5 @@
 import { View, TouchableOpacity, Image } from "react-native";
-// @ts-expect-error
-import { AntDesign } from "react-native-vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 
 interface ProfileImageSectionProps {
   profilePicture: string;

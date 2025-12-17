@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import Slider from "@react-native-community/slider";
-// @ts-expect-error
-import { Entypo } from "react-native-vector-icons";
+import { Entypo } from "@expo/vector-icons";
 
 interface RecordingPlayerControlsProps {
   isPlaying: boolean;

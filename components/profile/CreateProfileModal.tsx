@@ -13,8 +13,7 @@ import {
   Alert,
 } from "react-native";
 import Profile from "../../objects/Profile";
-// @ts-expect-error
-import { AntDesign } from "react-native-vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import {
   ImagePickerAsset,
   MediaType,
