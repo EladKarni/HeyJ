@@ -19,10 +19,12 @@
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
           "audio"
         ],
         "NSCameraUsageDescription": "Allow this app to access camera.",
-        "NSMicrophoneUsageDescription": "Allow this app to access your microphone"
+        "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "runtimeVersion": {
         "policy": "sdkVersion"
@@ -34,6 +36,7 @@
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
+          "Default",
           "Default"
         ]
       }
