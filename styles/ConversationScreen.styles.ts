@@ -13,12 +13,12 @@ export const createStyles = (
     },
     listContainer: {
       paddingTop: Platform.OS === "ios" ? insets.top - 25 : 15,
-      paddingBottom: 400,
+      paddingBottom: 225,
       justifyContent: "flex-end",
     },
     messageContainer: {
       width: "100%",
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: 12,
     },
   });
 

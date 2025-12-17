@@ -489,9 +489,9 @@ export default RecordingPlayer;
 const styles = StyleSheet.create({
   wrapper: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     width: "100%",
-    marginVertical: 6,
+    marginVertical: 4,
   },
   wrapperIncoming: {
     justifyContent: "flex-start",
@@ -505,12 +505,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: "#E0E0E0",
-    marginTop: 4,
   },
   container: {
     flex: 1,
-    marginHorizontal: 10,
-    padding: 16,
+    marginHorizontal: 8,
+    padding: 12,
     backgroundColor: "#FAFAFA",
     borderRadius: 14,
     borderWidth: 1.5,
@@ -526,8 +525,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-    paddingBottom: 10,
+    marginBottom: 8,
+    paddingBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#E8E8E8",
   },
@@ -589,7 +588,7 @@ const styles = StyleSheet.create({
   playContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 6,
     gap: 12,
   },
   button: {
@@ -639,7 +638,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 2,
   },
   timeContainer: {
     flexDirection: "row",
