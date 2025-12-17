@@ -139,6 +139,7 @@ const ConversationsScreen = () => {
         }
       }}
       style={styles.container}
+      contentContainerStyle={styles.listContent}
     />
   );
 };

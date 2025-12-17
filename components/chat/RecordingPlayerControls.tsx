@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Entypo } from "@expo/vector-icons";
+import { colors } from "../../styles/theme";
 
 interface RecordingPlayerControlsProps {
   isPlaying: boolean;
@@ -36,7 +37,7 @@ const RecordingPlayerControls = ({
         <Entypo
           name={isPlaying ? "controller-paus" : "controller-play"}
           size={28}
-          color={isLoading || !isReady ? "#999" : isPlaying ? "#FFF" : "#000"}
+          color={isLoading || !isReady ? colors.textTertiary : isPlaying ? colors.white : colors.text}
         />
       </TouchableOpacity>
       <View style={styles.sliderContainer}>
@@ -48,9 +49,9 @@ const RecordingPlayerControls = ({
           onValueChange={(value) => {
             onSeek(value);
           }}
-          minimumTrackTintColor={isPlaying ? "#4CAF50" : "#000"}
-          maximumTrackTintColor="#E0E0E0"
-          thumbTintColor={isPlaying ? "#4CAF50" : "#000"}
+          minimumTrackTintColor={isPlaying ? colors.success : colors.text}
+          maximumTrackTintColor={colors.borderLight}
+          thumbTintColor={isPlaying ? colors.success : colors.text}
           disabled={!isReady || !duration}
         />
         {showLoading && (

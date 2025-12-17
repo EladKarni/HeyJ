@@ -20,6 +20,7 @@ import ConversationScreen from "./screens/ConversationScreen";
 import FriendRequestsScreen from "./screens/FriendRequestsScreen";
 import ModalWrapper from "./utilities/ModalWrapper";
 import { RootStackParamList, AuthStackParamList } from "./types/navigation";
+import { colors } from "./styles/theme";
 global.Buffer = require("buffer").Buffer;
 
 // Global error handler
@@ -113,7 +114,10 @@ export default function App() {
                 headerShown: true,
                 headerTitle: "",
                 headerBackTitleVisible: false,
-                headerTintColor: "#000",
+                headerTintColor: colors.text,
+                headerStyle: {
+                  backgroundColor: colors.backgroundSecondary,
+                },
               }}
             />
           </AuthStack.Navigator>
@@ -155,7 +159,20 @@ const Navigation = () => {
   }
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.backgroundSecondary,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+        headerBackTitleStyle: {
+          color: colors.text,
+        },
+      }}
+    >
       <Stack.Screen
         name="Home"
         component={HomeScreen}
@@ -170,7 +187,7 @@ const Navigation = () => {
                 style={{ left: -25, top: -5 }}
                 onPress={() => setViewProfile(true)}
               >
-                <Ionicons name="person" size={25} />
+                <Ionicons name="person" size={25} color={colors.text} />
               </TouchableOpacity>
             ),
             headerTitleAlign: "center",
@@ -181,8 +198,8 @@ const Navigation = () => {
         name="Conversation"
         component={ConversationScreen}
         options={{
-          headerBackTitleStyle: { color: "#000" },
-          headerTintColor: "#000",
+          headerBackTitleStyle: { color: colors.text },
+          headerTintColor: colors.text,
         }}
       />
       <Stack.Screen

@@ -4,11 +4,15 @@ import { colors, spacing, typography, borderRadius } from "./theme";
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  listContent: {
+    backgroundColor: colors.background,
   },
   separator: {
     width: "98%",
     borderBottomWidth: 0.5,
-    borderBottomColor: "darkgrey",
+    borderBottomColor: colors.border,
     alignSelf: "center",
   },
   conversationContainer: {
@@ -18,13 +22,13 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     alignItems: "center",
-    backgroundColor: colors.white,
+    backgroundColor: colors.backgroundSecondary,
   },
   selectedConversationContainer: {
     width: "100%",
     height: 90,
     flexDirection: "row",
-    backgroundColor: colors.yellow,
+    backgroundColor: colors.backgroundTertiary,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     alignItems: "center",
@@ -54,6 +58,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: "bold",
     marginBottom: 4,
+    color: colors.text,
   },
   timestampContainer: {
     flexDirection: "row",
@@ -61,12 +66,12 @@ export const styles = StyleSheet.create({
   },
   lastMessage: {
     fontSize: typography.bodySmall.fontSize,
-    color: "gray",
+    color: colors.textSecondary,
     marginRight: 6,
   },
   paperPlaneIcon: {
     fontSize: 12,
-    color: "gray",
+    color: colors.textSecondary,
   },
   button: {
     width: 75,
@@ -87,7 +92,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     alignItems: "center",
-    backgroundColor: colors.lightBlue,
+    backgroundColor: colors.backgroundSecondary,
     borderLeftWidth: 3,
     borderLeftColor: colors.blueBorder,
   },
@@ -105,6 +110,7 @@ export const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: "bold",
     marginBottom: 4,
+    color: colors.text,
   },
   friendRequestLabel: {
     fontSize: typography.bodySmall.fontSize,

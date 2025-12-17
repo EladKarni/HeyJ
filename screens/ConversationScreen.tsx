@@ -20,6 +20,7 @@ import { useAudioRecordingStore } from "../stores/useAudioRecordingStore";
 import { ConversationScreenProps, RootStackParamList } from "../types/navigation";
 import MessageSection from "../components/chat/MessageSection";
 import Message from "../objects/Message";
+import { colors } from "../styles/theme";
 
 const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -54,7 +55,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
           onPress={() => {
             navigation.goBack();
           }}
-          tintColor="black"
+          tintColor={colors.text}
         />
       ),
     });

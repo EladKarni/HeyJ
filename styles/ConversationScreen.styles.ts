@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from "react-native";
-import { spacing } from "./theme";
+import { spacing, colors } from "./theme";
 
 export const createStyles = (
   buttonWidth: number,
@@ -10,10 +10,12 @@ export const createStyles = (
   StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: colors.background,
+      overflow: "visible" as any,
     },
     listContainer: {
       paddingTop: Platform.OS === "ios" ? insets.top - 25 : 15,
-      paddingBottom: 225,
+      paddingBottom: 325,
       justifyContent: "flex-end",
     },
     messageContainer: {
@@ -21,4 +23,3 @@ export const createStyles = (
       paddingHorizontal: 12,
     },
   });
-

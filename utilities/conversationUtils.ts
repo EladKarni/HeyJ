@@ -1,6 +1,7 @@
 import { sortBy } from "lodash";
 import Conversation from "../objects/Conversation";
 import Message from "../objects/Message";
+import { colors } from "../styles/theme";
 
 /**
  * Get the timestamp of the last message in a conversation
@@ -73,14 +74,14 @@ export const getStatusIndicator = (
 ): { icon: string; color: string } => {
   const lastMessage = lastMessageFromOtherUser(conversation, currentUserId);
   if (!lastMessage) {
-    return { icon: "question", color: "#808080" };
+    return { icon: "question", color: colors.gray };
   }
   const hoursSinceLastMessage =
     (Date.now() - lastMessage.timestamp.getTime()) / (1000 * 60 * 60);
   if (hoursSinceLastMessage < 24) {
-    return { icon: "check", color: "#4CAF50" };
+    return { icon: "check", color: colors.success };
   } else {
-    return { icon: "close", color: "#F44336" };
+    return { icon: "close", color: colors.error };
   }
 };
 
