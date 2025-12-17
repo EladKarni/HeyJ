@@ -103,9 +103,16 @@ export const useAudioPlaybackStore = create<AudioPlaybackState>((set, get) => ({
     // Check each conversation for new unheard messages
     conversations.forEach((conversation) => {
       const currentCount = conversation.messages.length;
-      const lastCount = lastMessageCounts[conversation.conversationId] || 0;
+      const lastCount = lastMessageCounts[conversation.conversationId];
 
-      // Only proceed if a new message was added
+      // If lastCount is undefined, this is the first time we're seeing this conversation
+      // Initialize the count but don't autoplay (not a "new" message, just initial load)
+      if (lastCount === undefined) {
+        get().updateMessageCount(conversation.conversationId, currentCount);
+        return;
+      }
+
+      // Only proceed if a new message was added (count increased from known value)
       if (currentCount > lastCount) {
         const otherUserUid = conversation.uids.find((id) => id !== profileId);
         if (!otherUserUid) {

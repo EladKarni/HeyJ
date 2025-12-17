@@ -26,7 +26,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const conversationId = route.params.conversationId;
   const { profile } = useProfile();
-  const { conversations } = useConversations();
+  const { conversations, updateMessageReadStatus } = useConversations();
   const insets = useSafeAreaInsets();
   const { autoplay } = useAudioSettings();
 
@@ -96,6 +96,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         isAutoPlaying={isAutoPlaying}
         playNextUnreadMessage={playNextUnreadMessage}
         stopAutoplay={stopAutoplay}
+        onMarkAsRead={updateMessageReadStatus}
         messageContainerStyle={styles.messageContainer}
       />
     );

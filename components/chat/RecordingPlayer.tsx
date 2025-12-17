@@ -28,6 +28,7 @@ const RecordingPlayer = ({
   autoPlay,
   onPlaybackFinished,
   stopAutoplay,
+  onMarkAsRead,
 }: {
   uri: string;
   currentUri: string;
@@ -42,6 +43,7 @@ const RecordingPlayer = ({
   autoPlay?: boolean;
   onPlaybackFinished?: () => void;
   stopAutoplay?: () => void;
+  onMarkAsRead?: (messageId: string) => void;
 }) => {
   const [file, setFile] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +52,7 @@ const RecordingPlayer = ({
   const hasMarkedAsRead = useRef(false);
   const hasToggledRead = useRef(false);
   const hasAutoPlayed = useRef(false);
+  const hasAttemptedAutoplayMarkRef = useRef(false);
   const { speakerMode, autoplay } = useAudioSettings();
 
   // Initialize player - will be set when file loads
@@ -232,17 +235,51 @@ const RecordingPlayer = ({
       // Reset the marked as read flag when switching to a different message
       hasMarkedAsRead.current = false;
       hasAutoPlayed.current = false;
+      hasAttemptedAutoplayMarkRef.current = false;
     } else if (currentUri === uri && autoPlay && !hasAutoPlayed.current && currentUserUid !== senderUid) {
       // Auto-play when this becomes the current message and autoplay is enabled
       // Note: autoPlay prop already includes the global autoplay setting check
       if (isReady && file) {
         // Audio is already loaded, play immediately
         hasAutoPlayed.current = true;
+
+        // Mark as read IMMEDIATELY before playing (fixes race condition)
+        if (!hasAttemptedAutoplayMarkRef.current) {
+          hasAttemptedAutoplayMarkRef.current = true;
+          console.log("🎯 Autoplay: Immediately marking as read:", messageId);
+          // Update local state immediately (synchronous)
+          hasMarkedAsRead.current = true;
+          setLocalIsRead(true);
+          if (onMarkAsRead) {
+            onMarkAsRead(messageId);
+          }
+          // Start database update (async, with promise to ensure it runs)
+          markMessageAsRead(messageId).catch((err) => {
+            console.error("Failed to mark message as read in DB:", err);
+          });
+        }
+
         audioPlayer.play();
-        // Note: Marking as read is now handled by the useEffect that watches playerStatus.playing
       } else if (!isLoading && !file) {
         // Audio needs to be loaded first, then play
         hasAutoPlayed.current = true;
+
+        // Mark as read IMMEDIATELY before loading and playing
+        if (!hasAttemptedAutoplayMarkRef.current) {
+          hasAttemptedAutoplayMarkRef.current = true;
+          console.log("🎯 Autoplay: Immediately marking as read:", messageId);
+          // Update local state immediately (synchronous)
+          hasMarkedAsRead.current = true;
+          setLocalIsRead(true);
+          if (onMarkAsRead) {
+            onMarkAsRead(messageId);
+          }
+          // Start database update (async, with promise to ensure it runs)
+          markMessageAsRead(messageId).catch((err) => {
+            console.error("Failed to mark message as read in DB:", err);
+          });
+        }
+
         loadAudio(true); // Pass true to play after loading
       }
     }
@@ -262,16 +299,18 @@ const RecordingPlayer = ({
     // 2. Player is actually playing (playerStatus.playing)
     // 3. User is the recipient (not the sender)
     // 4. We haven't already marked it as read
-    // 5. Audio is ready
+    // 5. We haven't already marked it during autoplay
+    // 6. Audio is ready
     if (
       currentUri === uri &&
       playerStatus.playing &&
       currentUserUid !== senderUid &&
       !hasMarkedAsRead.current &&
+      !hasAttemptedAutoplayMarkRef.current &&
       isReady &&
       file
     ) {
-      console.log("🎵 Playback started - marking as read:", messageId);
+      console.log("🎵 Manual playback started - marking as read:", messageId);
       handlePlayStart();
     }
   }, [playerStatus.playing, currentUri, uri, currentUserUid, senderUid, isReady, file, messageId]);

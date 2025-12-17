@@ -8,6 +8,7 @@ interface ConversationsContextType {
   conversations: Conversation[];
   profiles: Profile[];
   getConversations: () => Promise<void>;
+  updateMessageReadStatus: (messageId: string) => void;
 }
 
 const ConversationsContext = createContext<ConversationsContextType | null>(null);
@@ -227,6 +228,28 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
     setProfiles(profiles);
   };
 
+  const updateMessageReadStatus = (messageId: string) => {
+    setConversations((prevConversations) => {
+      return prevConversations.map((conv) => {
+        const messageIndex = conv.messages.findIndex(
+          (m) => m.messageId === messageId
+        );
+
+        if (messageIndex !== -1) {
+          const updatedMessages = [...conv.messages];
+          updatedMessages[messageIndex] = {
+            ...updatedMessages[messageIndex],
+            isRead: true,
+          };
+
+          return { ...conv, messages: updatedMessages };
+        }
+
+        return conv;
+      });
+    });
+  };
+
   useEffect(() => {
     getProfiles();
   }, [conversations]);
@@ -237,6 +260,7 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
         conversations,
         profiles,
         getConversations,
+        updateMessageReadStatus,
       }}
     >
       {children}

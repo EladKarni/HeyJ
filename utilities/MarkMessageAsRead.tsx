@@ -1,6 +1,7 @@
 import { supabase } from "./Supabase";
 
 export const markMessageAsRead = async (messageId: string) => {
+  console.log("💾 markMessageAsRead START:", messageId);
   try {
     const { error } = await supabase
       .from("messages")
@@ -8,10 +9,15 @@ export const markMessageAsRead = async (messageId: string) => {
       .eq("messageId", messageId);
 
     if (error) {
-      console.error("Error marking message as read:", error);
+      console.error("❌ Error marking message as read:", error);
+      return false;
+    } else {
+      console.log("✅ markMessageAsRead SUCCESS:", messageId);
+      return true;
     }
   } catch (error) {
-    console.error("Error marking message as read:", error);
+    console.error("❌ Exception marking message as read:", error);
+    return false;
   }
 };
 
