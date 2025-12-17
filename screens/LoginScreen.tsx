@@ -14,10 +14,12 @@ import { signInWithEmail } from "../utilities/AuthHelper";
 import { styles } from "../styles/LoginScreen.styles";
 import { LoginScreenProps } from "../types/navigation";
 
+
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -37,21 +39,21 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       setLoading(false);
       return;
     }
-    
+
     // If we get here with loading still true, we're waiting for auth state change
     console.log('🎯 LoginScreen: Waiting for auth state change...');
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { minHeight: '100%' }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[styles.scrollContainer, { minHeight: '100%' }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { minHeight: '100%' }]}>
           <Text style={styles.title}>Welcome to HeyJ</Text>
           <Text style={styles.subtitle}>Voice messaging made simple</Text>
 
@@ -69,15 +71,27 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
               autoComplete="email"
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="password"
-            />
+
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="password"
+              />
+              <TouchableOpacity
+                style={{ position: 'absolute', right: 10, top: 12 }}
+                onPress={() => setShowPassword((prev) => !prev)}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                <Text style={{ color: '#007AFF', fontSize: 14 }}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={[styles.emailButton, loading && styles.emailButtonDisabled]}
@@ -99,15 +113,17 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
             </TouchableOpacity>
           </View>
 
-          {/* OAuth Section */}
-          <View style={styles.oauthSection}>
-            <Text style={styles.divider}>OR</Text>
-            <Text style={styles.sectionTitle}>Continue with</Text>
-            <View style={styles.oauthButtons}>
-              <OAuthButton type="google" />
-              <OAuthButton type="apple" />
+          {/* OAuth Section - commented out until social logins are setup */}
+          {false && (
+            <View style={styles.oauthSection}>
+              <Text style={styles.divider}>OR</Text>
+              <Text style={styles.sectionTitle}>Continue with</Text>
+              <View style={styles.oauthButtons}>
+                <OAuthButton type="google" />
+                <OAuthButton type="apple" />
+              </View>
             </View>
-          </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,5 +1,11 @@
 import { StyleSheet } from "react-native";
-import { colors, spacing, typography, borderRadius, buttonHeight } from "./theme";
+import {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+  buttonHeight,
+} from "./theme";
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,10 +15,15 @@ export const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100%",
   },
   content: {
     padding: spacing.lg,
     alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    width: "100%",
   },
   title: {
     ...typography.title,
@@ -33,13 +44,14 @@ export const styles = StyleSheet.create({
     ...typography.sectionTitle,
     marginBottom: spacing.md,
     textAlign: "center",
-    color: colors.darkGray,
+    color: colors.textSecondary,
   },
   input: {
     width: "100%",
     height: buttonHeight,
     borderWidth: 1,
     borderColor: colors.border,
+    color: colors.textSecondary,
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
@@ -49,6 +61,7 @@ export const styles = StyleSheet.create({
   emailButton: {
     width: "100%",
     height: buttonHeight,
+    color: colors.textSecondary,
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
     justifyContent: "center",
@@ -177,4 +190,3 @@ export const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
