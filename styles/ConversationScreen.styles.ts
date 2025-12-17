@@ -12,7 +12,7 @@ export const createStyles = (
       flex: 1,
     },
     listContainer: {
-      paddingTop: Platform.OS === "ios" ? insets.top - 25 : 175,
+      paddingTop: Platform.OS === "ios" ? insets.top - 25 : 15,
       paddingBottom: 400,
       justifyContent: "flex-end",
     },
