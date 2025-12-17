@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
     View,
     StyleSheet,
@@ -8,11 +8,13 @@ import {
     Animated,
 } from "react-native";
 import { colors } from "../../styles/theme";
+import { featureFlags } from "../../utilities/featureFlags";
 import Profile from "../../objects/Profile";
 import TopButtonsRow from "./TopButtonsRow";
 import RecipientSelector from "./RecipientSelector";
 import WaveformLeft from "./WaveformLeft";
 import WaveformRight from "./WaveformRight";
+import { usePanelStateStore } from "../../stores/usePanelStateStore";
 
 interface RecordingPanelProps {
     onPressIn: () => void;
@@ -29,6 +31,7 @@ interface RecordingPanelProps {
     renderLeftWaves?: () => React.ReactElement;
     renderRightWaves?: () => React.ReactElement;
     isRecording?: boolean;
+    isInConversationScreen?: boolean; // Flag to indicate if panel is in ConversationScreen
 }
 
 const RecordingPanel = ({
@@ -46,13 +49,19 @@ const RecordingPanel = ({
     renderLeftWaves,
     renderRightWaves,
     isRecording = false,
+    isInConversationScreen = false,
 }: RecordingPanelProps) => {
     const windowDimensions = useWindowDimensions();
     const styles = Styles(windowDimensions.width);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const { isCollapsed, setIsCollapsed, loadPanelState, isLoading } = usePanelStateStore();
     
     // Animation for pulsing effect when recording
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    
+    // Load saved panel state on component mount
+    useEffect(() => {
+        loadPanelState();
+    }, [loadPanelState]);
     
     useEffect(() => {
         if (isRecording) {
@@ -110,7 +119,7 @@ const RecordingPanel = ({
                     </View>
                 </View>
             )}
-            {showRecipient && !isCollapsed && (
+            {showRecipient && !isCollapsed && !(isInConversationScreen && featureFlags.hideRecipientInConversationScreen) && (
                 <RecipientSelector
                     recipientName={recipientName}
                     friends={friends}

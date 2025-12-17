@@ -15,7 +15,7 @@ export const createStyles = (
     },
     listContainer: {
       paddingTop: Platform.OS === "ios" ? insets.top - 25 : 15,
-      paddingBottom: 325,
+      paddingBottom: 250,
       justifyContent: "flex-end",
     },
     messageContainer: {

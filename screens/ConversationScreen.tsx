@@ -176,6 +176,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         showRecipient={true}
         recipientName={otherProfile?.name || "Select a Conversation"}
         isRecording={isRecording}
+        isInConversationScreen={true}
       />
     </View>
   );
