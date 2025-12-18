@@ -78,10 +78,12 @@ const ConversationsScreen = () => {
     );
   }, [conversations, friendRequests, requesterProfilesMap, profile, computeSortedListItems]);
 
-  // Auto-select first conversation
+  // Auto-select first conversation only if nothing is selected
   useEffect(() => {
-    selectFirstConversation();
-  }, [sortedListItems, selectFirstConversation]);
+    if (!selectedConversation && sortedListItems.length > 0) {
+      selectFirstConversation();
+    }
+  }, [sortedListItems, selectFirstConversation, selectedConversation]);
 
   // Auto-play new messages
   useEffect(() => {
