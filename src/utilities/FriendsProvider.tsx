@@ -4,6 +4,7 @@ import FriendRequest from "@objects/FriendRequest";
 import Profile from "@objects/Profile";
 import { useProfile } from "./ProfileProvider";
 import { logAgentEvent } from "./AgentLogger";
+import { sendPushNotification } from "./Onesignal";
 
 interface FriendsContextType {
   friendRequests: FriendRequest[];
@@ -253,6 +254,19 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
       }
 
       await getFriendRequests();
+
+      // Send notification to addressee
+      sendPushNotification(
+        foundUser.uid,
+        profile.name,
+        profile.profilePicture,
+        '', // No conversation ID for friend requests
+        '', // No message URL
+        'friend_request'
+      ).catch((error) => {
+        console.warn("⚠️ Failed to send friend request notification:", error);
+      });
+
       return { success: true };
     } catch (error: any) {
       console.error("Error sending friend request:", error);
@@ -286,6 +300,27 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
 
       await getFriendRequests();
       await getFriends();
+
+      // Get the requester's info and send notification
+      const { data: friendRequest } = await supabase
+        .from("friendships")
+        .select("requester_id")
+        .eq("id", requestId)
+        .single();
+
+      if (friendRequest?.requester_id) {
+        sendPushNotification(
+          friendRequest.requester_id,
+          profile.name,
+          profile.profilePicture,
+          '',
+          '',
+          'friend_accepted'
+        ).catch((error) => {
+          console.warn("⚠️ Failed to send friend accepted notification:", error);
+        });
+      }
+
       return { success: true };
     } catch (error: any) {
       console.error("Error accepting friend request:", error);

@@ -20,7 +20,7 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
-          "audio"
+          "remote-notification"
         ],
         "NSCameraUsageDescription": "Allow this app to access camera.",
         "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
@@ -62,6 +62,12 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
       [
         "expo-image-picker",
         {

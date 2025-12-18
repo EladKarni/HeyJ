@@ -5,6 +5,7 @@ import { View } from "react-native";
 import Profile from "@objects/Profile";
 import { handleError } from "./errorHandler";
 import { logAgentEvent } from "./AgentLogger";
+import { initializeOneSignal } from "./Onesignal";
 
 const ProfileContext = createContext<{
   appReady: boolean;
@@ -158,7 +159,13 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     updateProfile();
-    // Push notifications disabled for testing
+
+    // Initialize OneSignal when user is authenticated
+    if (user?.id) {
+      initializeOneSignal(user.id).catch((error) => {
+        handleError(error, 'ProfileProvider - OneSignal initialization');
+      });
+    }
   }, [user]);
 
   useEffect(() => {

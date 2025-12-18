@@ -3,6 +3,7 @@ import { makeRedirectUri } from "expo-auth-session";
 import { supabase } from "./Supabase";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import { Alert } from "react-native";
+import { removeToken } from "./Onesignal";
 
 const createSessionFromUrl = async (url: string) => {
   const { params, errorCode } = QueryParams.getQueryParams(url);
@@ -152,6 +153,15 @@ export const signUpWithEmail = async (
 };
 
 export const signOut = async () => {
+  // Get current user ID before signing out
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Remove OneSignal token
+  if (user?.id) {
+    await removeToken(user.id);
+  }
+
+  // Sign out from Supabase
   const { error } = await supabase.auth.signOut();
   if (error) {
     throw error;
