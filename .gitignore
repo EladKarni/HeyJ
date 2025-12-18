@@ -49,3 +49,6 @@ android/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# git files
+.gitignore

@@ -4,8 +4,20 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "react-native-onesignal": ["./mocks/react-native-onesignal.d.ts"],
-      "rn-qr-generator": ["./mocks/rn-qr-generator.d.ts"]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@screens/*": ["./src/screens/*"],
+      "@utilities/*": ["./src/utilities/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@stores/*": ["./src/stores/*"],
+      "@objects/*": ["./src/objects/*"],
+      "@services/*": ["./src/services/*"],
+      "@styles/*": ["./src/styles/*"],
+      "@app-types/*": ["./src/types/*"],
+      "@assets/*": ["./assets/*"],
+      "@tests/*": ["./tests/*"],
+      "react-native-onesignal": ["./tests/mocks/react-native-onesignal.d.ts"],
+      "rn-qr-generator": ["./tests/mocks/rn-qr-generator.d.ts"]
     }
   }
 }
