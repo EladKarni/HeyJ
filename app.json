@@ -12,16 +12,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio",
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["audio", "remote-notification"],
         "NSCameraUsageDescription": "Allow this app to access camera.",
         "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
         "ITSAppUsesNonExemptEncryption": false
@@ -35,10 +30,7 @@
         "image": "./assets/splash.png"
       },
       "entitlements": {
-        "com.apple.developer.applesignin": [
-          "Default",
-          "Default"
-        ]
+        "com.apple.developer.applesignin": ["Default", "Default"]
       }
     },
     "android": {
@@ -80,6 +72,7 @@
       "eas": {
         "projectId": "425b4502-a4b9-4fe6-a2ea-ca4129daa0dc"
       }
-    }
+    },
+    "jsEngine": "hermes"
   }
 }
