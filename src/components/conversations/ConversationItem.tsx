@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Image } from "react-native";
 import Conversation from "@objects/Conversation";
 import Profile from "@objects/Profile";
 import { styles } from "@styles/screens/ConversationsScreen.styles";
@@ -9,7 +9,6 @@ import {
   lastMessageTimestamp,
   lastMessageFromOtherUser,
   getStatusIndicator,
-  getOtherUserUid,
 } from "@utilities/conversationUtils";
 import { useAudioPlayer } from "expo-audio";
 import { updateLastRead } from "@utilities/UpdateConversation";
@@ -21,7 +20,11 @@ interface ConversationItemProps {
   isSelected: boolean;
   onPress: () => void;
   onLongPress: () => void;
-  playFromUri: (uri: string, conversationId: string, audioPlayer: ReturnType<typeof useAudioPlayer>) => void;
+  playFromUri: (
+    uri: string,
+    conversationId: string,
+    audioPlayer: ReturnType<typeof useAudioPlayer>
+  ) => void;
   audioPlayer: ReturnType<typeof useAudioPlayer>;
 }
 
@@ -36,15 +39,28 @@ const ConversationItem = ({
   audioPlayer,
 }: ConversationItemProps) => {
   const status = getStatusIndicator(conversation, currentUserProfile.uid);
+  const isIncoming = conversation.uids.includes(otherProfile?.uid);
+  const profilePicture = isIncoming
+    ? otherProfile?.profilePicture
+    : currentUserProfile.profilePicture;
 
   const handlePress = () => {
     onPress();
-    const lastMessage = lastMessageFromOtherUser(conversation, currentUserProfile.uid);
+    const lastMessage = lastMessageFromOtherUser(
+      conversation,
+      currentUserProfile.uid
+    );
 
     // Play the last message from the other user when tapping the conversation
     if (lastMessage) {
-      playFromUri(lastMessage.audioUrl, conversation.conversationId, audioPlayer);
-      const lastRead = conversation.lastRead.find((l) => l.uid === currentUserProfile.uid);
+      playFromUri(
+        lastMessage.audioUrl,
+        conversation.conversationId,
+        audioPlayer
+      );
+      const lastRead = conversation.lastRead.find(
+        (l) => l.uid === currentUserProfile.uid
+      );
       // Update last read if this message hasn't been read yet
       if (!lastRead || isBefore(lastRead.timestamp, lastMessage.timestamp)) {
         updateLastRead(conversation.conversationId, currentUserProfile.uid);
@@ -63,9 +79,9 @@ const ConversationItem = ({
       onLongPress={onLongPress}
     >
       <View style={styles.statusIndicator}>
-        <View style={[styles.statusCircle, { backgroundColor: status.color }]}>
-          <FontAwesome name={status.icon as any} style={styles.statusIcon} />
-        </View>
+        {isIncoming && profilePicture && (
+          <Image style={styles.avatar} source={{ uri: profilePicture }} />
+        )}
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.profileName}>{otherProfile.name}</Text>

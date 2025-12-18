@@ -6,6 +6,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.borderLight,
+  },
   listContent: {
     backgroundColor: colors.background,
   },
@@ -145,4 +152,3 @@ export const styles = StyleSheet.create({
     fontSize: typography.bodySmall.fontSize,
   },
 });
-

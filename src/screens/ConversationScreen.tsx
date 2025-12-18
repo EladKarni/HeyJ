@@ -26,7 +26,11 @@ import MessageSection from "@components/chat/MessageSection";
 
 // Objects & Types
 import Message from "@objects/Message";
-import { ConversationScreenProps, RootStackParamList } from "@app-types/navigation";
+import Profile from "@objects/Profile";
+import {
+  ConversationScreenProps,
+  RootStackParamList,
+} from "@app-types/navigation";
 
 // Styles
 import { createStyles as createConversationScreenStyles } from "@styles/screens/ConversationScreen.styles";
@@ -36,13 +40,21 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const conversationId = route.params.conversationId;
   const { profile } = useProfile();
-  const { conversations, updateMessageReadStatus } = useConversations();
+  const { conversations, profiles, updateMessageReadStatus } =
+    useConversations();
   const insets = useSafeAreaInsets();
 
-  const { conversation, sortedMessages, otherProfile } = useConversationMessages(conversationId);
+  const { conversation, sortedMessages, otherProfile } =
+    useConversationMessages(conversationId);
   const [currentUri, setCurrentUri] = React.useState("");
+  const [selectedFriendUid, setSelectedFriendUid] = React.useState<
+    string | null
+  >(null);
+  // Track if user manually selected a recipient
+  const [manualRecipientSelected, setManualRecipientSelected] =
+    React.useState(false);
   const { isRecording } = useAudioRecordingStore();
-  
+
   // Track previous message count to detect new messages
   const prevMessageCountRef = useRef<number>(0);
   // Track if user has manually scrolled away from bottom
@@ -101,13 +113,21 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
     data: Message[];
   }) => {
     if (!profile) return null;
-    
+
     return (
       <MessageSection
         title={title}
         data={data}
         currentUri={currentUri}
-        setCurrentUri={setCurrentUri}
+        setCurrentUri={(uri) => {
+          setCurrentUri(uri);
+          if (!manualRecipientSelected) {
+            const tappedMsg = data.find((m) => m.audioUrl === uri);
+            if (tappedMsg) {
+              setSelectedFriendUid(tappedMsg.uid);
+            }
+          }
+        }}
         currentUserUid={profile.uid}
         otherProfile={otherProfile}
         currentUserProfile={profile}
@@ -123,9 +143,12 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
 
   // Only scroll to end when a new message is actually added (not on every data change)
   useEffect(() => {
-    const currentMessageCount = sortedMessages.reduce((sum, section) => sum + section.data.length, 0);
+    const currentMessageCount = sortedMessages.reduce(
+      (sum, section) => sum + section.data.length,
+      0
+    );
     const prevMessageCount = prevMessageCountRef.current;
-    
+
     // Only scroll if:
     // 1. This is the initial load, OR
     // 2. A new message was added AND user should auto-scroll
@@ -172,8 +195,10 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         contentInsetAdjustmentBehavior="automatic"
         onScroll={(event) => {
           // Track if user is near the bottom (within 100px)
-          const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-          const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+          const { contentOffset, contentSize, layoutMeasurement } =
+            event.nativeEvent;
+          const distanceFromBottom =
+            contentSize.height - layoutMeasurement.height - contentOffset.y;
           setShouldAutoScroll(distanceFromBottom < 100);
         }}
         scrollEventThrottle={400}
@@ -184,7 +209,23 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         onPressOut={stopRecordingHook}
         showTopButtons={true}
         showRecipient={true}
-        recipientName={otherProfile?.name || "Select a Conversation"}
+        recipientName={(() => {
+          if (selectedFriendUid) {
+            const selected = profiles.find(
+              (p: Profile) => p.uid === selectedFriendUid
+            );
+            return (
+              selected?.name || otherProfile?.name || "Select a Conversation"
+            );
+          }
+          return otherProfile?.name || "Select a Conversation";
+        })()}
+        friends={profiles.filter((p: Profile) => p.uid !== profile?.uid)}
+        selectedFriendUid={selectedFriendUid}
+        onFriendSelected={(uid) => {
+          setSelectedFriendUid(uid);
+          setManualRecipientSelected(true);
+        }}
         isRecording={isRecording}
         isInConversationScreen={true}
       />
@@ -193,5 +234,3 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
 };
 
 export default ConversationScreen;
-
-
