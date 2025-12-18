@@ -1,67 +1,100 @@
-import {
-  View,
-  Text,
-  Alert,
-} from "react-native";
+// React
 import { useEffect, useState } from "react";
+import { View, Text, Alert } from "react-native";
+
+// Navigation
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+
+// Utilities & Providers
 import { useProfile } from "../utilities/ProfileProvider";
 import { useConversations } from "../utilities/ConversationsProvider";
 import { useFriends } from "../utilities/FriendsProvider";
-import ConversationsScreen from "./ConversationsScreen";
 import { sendMessage } from "../utilities/SendMessage";
-import { useNavigation } from "@react-navigation/native";
-import { NavigationProp } from "@react-navigation/native";
-import { RootStackParamList } from "../types/navigation";
-import RecordingPanel from "../components/chat/RecordingPanel";
 import { supabase } from "../utilities/Supabase";
+import { logAgentEvent } from "../utilities/AgentLogger";
+
+// Hooks
 import { useAudioRecording } from "../hooks/useAudioRecording";
+
+// Stores
 import { useConversationListStore } from "../stores/useConversationListStore";
 import { useAudioRecordingStore } from "../stores/useAudioRecordingStore";
+
+// Components
+import RecordingPanel from "../components/chat/RecordingPanel";
+
+// Screens
+import ConversationsScreen from "./ConversationsScreen";
+
+// Types & Styles
+import { RootStackParamList } from "../types/navigation";
 import { createStyles as createHomeScreenStyles } from "../styles/HomeScreen.styles";
 
 const HomeScreen = () => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:19',message:'HomeScreen rendering',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
+  logAgentEvent({
+    location: 'HomeScreen.tsx:render',
+    message: 'HomeScreen rendering',
+    data: {},
+    hypothesisId: 'B',
+  });
+
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   let profile, getProfile, conversations, profiles, friends, getFriends;
   try {
     const profileContext = useProfile();
     profile = profileContext.profile;
     getProfile = profileContext.getProfile;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:26',message:'HomeScreen useProfile success',data:{hasProfile:!!profile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useProfile',
+      message: 'HomeScreen useProfile success',
+      data: { hasProfile: !!profile },
+      hypothesisId: 'B',
+    });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:29',message:'HomeScreen useProfile error',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useProfile:error',
+      message: 'HomeScreen useProfile error',
+      data: { errorMessage: error instanceof Error ? error.message : String(error) },
+      hypothesisId: 'B',
+    });
     throw error;
   }
   try {
     const conversationsContext = useConversations();
     conversations = conversationsContext.conversations;
     profiles = conversationsContext.profiles;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:35',message:'HomeScreen useConversations success',data:{conversationsCount:conversations?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useConversations',
+      message: 'HomeScreen useConversations success',
+      data: { conversationsCount: conversations?.length || 0 },
+      hypothesisId: 'B',
+    });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:38',message:'HomeScreen useConversations error',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useConversations:error',
+      message: 'HomeScreen useConversations error',
+      data: { errorMessage: error instanceof Error ? error.message : String(error) },
+      hypothesisId: 'B',
+    });
     throw error;
   }
   try {
     const friendsContext = useFriends();
     friends = friendsContext.friends;
     getFriends = friendsContext.getFriends;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:44',message:'HomeScreen useFriends success',data:{friendsCount:friends?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useFriends',
+      message: 'HomeScreen useFriends success',
+      data: { friendsCount: friends?.length || 0 },
+      hypothesisId: 'B',
+    });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:47',message:'HomeScreen useFriends error',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:useFriends:error',
+      message: 'HomeScreen useFriends error',
+      data: { errorMessage: error instanceof Error ? error.message : String(error) },
+      hypothesisId: 'B',
+    });
     throw error;
   }
 
@@ -122,9 +155,12 @@ const HomeScreen = () => {
   const handleFriendSelected = async (friendUid: string) => {
     if (!profile) return;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:272',message:'handleFriendSelected called',data:{friendUid,currentUid:profile.uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'HomeScreen.tsx:handleFriendSelected',
+      message: 'handleFriendSelected called',
+      data: { friendUid, currentUid: profile.uid },
+      hypothesisId: 'A',
+    });
 
     try {
       // Use findOrCreateConversation to ensure we don't create duplicates
@@ -132,10 +168,13 @@ const HomeScreen = () => {
       const result = await findOrCreateConversation(profile.uid, friendUid);
       const conversation = result.conversation;
       const conversationId = conversation.conversationId;
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'HomeScreen.tsx:279',message:'findOrCreateConversation result',data:{conversationId,isNew:result.isNew,friendUid,currentUid:profile.uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
+
+      logAgentEvent({
+        location: 'HomeScreen.tsx:findOrCreateConversation',
+        message: 'findOrCreateConversation result',
+        data: { conversationId, isNew: result.isNew, friendUid, currentUid: profile.uid },
+        hypothesisId: 'A',
+      });
 
       // Get friend's profile to update
       const friend = friends.find((f) => f.uid === friendUid);

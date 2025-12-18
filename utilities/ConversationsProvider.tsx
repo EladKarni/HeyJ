@@ -4,6 +4,7 @@ import Conversation from "../objects/Conversation";
 import Message from "../objects/Message";
 import Profile from "../objects/Profile";
 import { useProfile } from "./ProfileProvider";
+import { logAgentEvent } from "./AgentLogger";
 
 interface ConversationsContextType {
   conversations: Conversation[];
@@ -15,20 +16,32 @@ interface ConversationsContextType {
 const ConversationsContext = createContext<ConversationsContextType | null>(null);
 
 export const ConversationsProvider = ({ children }: { children: React.ReactNode }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:15',message:'ConversationsProvider rendering',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  logAgentEvent({
+    location: 'ConversationsProvider.tsx:ConversationsProvider',
+    message: 'ConversationsProvider rendering',
+    data: {},
+    hypothesisId: 'A',
+  });
   let profile;
   try {
     const profileContext = useProfile();
     profile = profileContext.profile;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:20',message:'ConversationsProvider useProfile success',data:{hasProfile:!!profile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'ConversationsProvider.tsx:ConversationsProvider',
+      message: 'ConversationsProvider useProfile success',
+      data: { hasProfile: !!profile },
+      hypothesisId: 'A',
+    });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:23',message:'ConversationsProvider useProfile error',data:{errorMessage:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'ConversationsProvider.tsx:ConversationsProvider',
+      message: 'ConversationsProvider useProfile error',
+      data: {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      },
+      hypothesisId: 'A',
+    });
     throw error;
   }
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -119,17 +132,32 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (profile) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:54',message:'profile changed, calling getConversations',data:{profileUid:profile.uid,conversationIds:profile.conversations||[],conversationCount:profile.conversations?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
+      logAgentEvent({
+        location: 'ConversationsProvider.tsx:useEffect[profile]',
+        message: 'profile changed, calling getConversations',
+        data: {
+          profileUid: profile.uid,
+          conversationIds: profile.conversations || [],
+          conversationCount: profile.conversations?.length || 0,
+        },
+        hypothesisId: 'C',
+      });
       getConversations();
     }
   }, [profile]);
 
   const updateConversations = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:61',message:'updateConversations called',data:{hasProfile:!!profile,conversationIds:profile?.conversations||[],conversationCount:profile?.conversations?.length||0,existingSubscriptions:Array.from(conversationChannelsRef.current.keys())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'ConversationsProvider.tsx:updateConversations',
+      message: 'updateConversations called',
+      data: {
+        hasProfile: !!profile,
+        conversationIds: profile?.conversations || [],
+        conversationCount: profile?.conversations?.length || 0,
+        existingSubscriptions: Array.from(conversationChannelsRef.current.keys()),
+      },
+      hypothesisId: 'C',
+    });
     if (!profile || !profile.conversations || profile.conversations.length === 0) {
       // Clean up all subscriptions if no conversations
       conversationChannelsRef.current.forEach((channel, id) => {
@@ -152,15 +180,21 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
     profile.conversations.forEach((id: string) => {
       // Skip if subscription already exists
       if (conversationChannelsRef.current.has(id)) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:78',message:'subscription already exists for conversation',data:{conversationId:id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
+        logAgentEvent({
+          location: 'ConversationsProvider.tsx:updateConversations',
+          message: 'subscription already exists for conversation',
+          data: { conversationId: id },
+          hypothesisId: 'C',
+        });
         return;
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:82',message:'setting up subscription for new conversation',data:{conversationId:id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
+      logAgentEvent({
+        location: 'ConversationsProvider.tsx:updateConversations',
+        message: 'setting up subscription for new conversation',
+        data: { conversationId: id },
+        hypothesisId: 'C',
+      });
       try {
         const channel = supabase.channel(id + "_conversation");
 
@@ -174,9 +208,17 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
               filter: "conversationId=eq." + id,
             },
             async (payload) => {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:97',message:'conversation real-time update received',data:{conversationId:id,eventType:payload.eventType,newMessages:payload.new?.messages?.length||0,oldMessages:payload.old?.messages?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
+              logAgentEvent({
+                location: 'ConversationsProvider.tsx:updateConversations:channel.on',
+                message: 'conversation real-time update received',
+                data: {
+                  conversationId: id,
+                  eventType: payload.eventType,
+                  newMessages: payload.new?.messages?.length || 0,
+                  oldMessages: payload.old?.messages?.length || 0,
+                },
+                hypothesisId: 'B',
+              });
               const { data: conversationData, error } = await supabase
                 .from("conversations")
                 .select()
@@ -186,23 +228,43 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
                 const updatedConversation = await Conversation.fromJSON(
                   conversationData[0]
                 );
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:104',message:'conversation updated locally',data:{conversationId:id,messageCount:updatedConversation.messages.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
+                logAgentEvent({
+                  location: 'ConversationsProvider.tsx:updateConversations:channel.on',
+                  message: 'conversation updated locally',
+                  data: {
+                    conversationId: id,
+                    messageCount: updatedConversation.messages.length,
+                  },
+                  hypothesisId: 'B',
+                });
 
                 setConversations((prevConversations) => {
                   const existing = prevConversations.find(c => c.conversationId === id);
                   if (!existing) {
                     // New conversation, add it
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:114',message:'adding new conversation from real-time update',data:{conversationId:id,messageCount:updatedConversation.messages.length,previousConversationsCount:prevConversations.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                    // #endregion
+                    logAgentEvent({
+                      location: 'ConversationsProvider.tsx:updateConversations:setConversations',
+                      message: 'adding new conversation from real-time update',
+                      data: {
+                        conversationId: id,
+                        messageCount: updatedConversation.messages.length,
+                        previousConversationsCount: prevConversations.length,
+                      },
+                      hypothesisId: 'B',
+                    });
                     return [...prevConversations, updatedConversation];
                   }
                   // Update existing conversation
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:121',message:'updating existing conversation from real-time update',data:{conversationId:id,oldMessageCount:existing.messages.length,newMessageCount:updatedConversation.messages.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                  // #endregion
+                  logAgentEvent({
+                    location: 'ConversationsProvider.tsx:updateConversations:setConversations',
+                    message: 'updating existing conversation from real-time update',
+                    data: {
+                      conversationId: id,
+                      oldMessageCount: existing.messages.length,
+                      newMessageCount: updatedConversation.messages.length,
+                    },
+                    hypothesisId: 'B',
+                  });
                   return prevConversations.map((c) =>
                     c.conversationId === id ? updatedConversation : c
                   );
@@ -211,13 +273,19 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
             }
           )
           .subscribe((status) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:132',message:'conversation subscription status',data:{conversationId:id,status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
+            logAgentEvent({
+              location: 'ConversationsProvider.tsx:updateConversations:subscribe',
+              message: 'conversation subscription status',
+              data: { conversationId: id, status },
+              hypothesisId: 'B',
+            });
             if (status === "SUBSCRIBED") {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ConversationsProvider.tsx:135',message:'conversation subscription active',data:{conversationId:id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
+              logAgentEvent({
+                location: 'ConversationsProvider.tsx:updateConversations:subscribe',
+                message: 'conversation subscription active',
+                data: { conversationId: id },
+                hypothesisId: 'B',
+              });
             }
           });
         

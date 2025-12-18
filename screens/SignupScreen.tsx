@@ -1,3 +1,4 @@
+// React
 import React, { useState } from "react";
 import {
   View,
@@ -8,24 +9,31 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
 } from "react-native";
-import { styles } from "../styles/SignupScreen.styles";
+
+// Third-party libraries
 import { Ionicons } from "@expo/vector-icons";
 import {
   ImagePickerAsset,
-  MediaType,
   requestMediaLibraryPermissionsAsync,
   launchImageLibraryAsync,
 } from "expo-image-picker";
 import { openSettings } from "expo-linking";
+
+// Utilities
 import { signUpWithEmail } from "../utilities/AuthHelper";
 import { supabase } from "../utilities/Supabase";
+
+// Hooks
 import { useFormValidation } from "../hooks/useFormValidation";
-import { SignupScreenProps } from "../types/navigation";
-import RequirementItem from "../components/auth/RequirementItem";
+
+// Components
 import PasswordStrengthIndicator from "../components/auth/PasswordStrengthIndicator";
 import ProfilePicturePicker from "../components/auth/ProfilePicturePicker";
+
+// Types & Styles
+import { SignupScreenProps } from "../types/navigation";
+import { styles } from "../styles/SignupScreen.styles";
 
 const SignupScreen = ({ navigation }: SignupScreenProps) => {
   const [fullName, setFullName] = useState("");

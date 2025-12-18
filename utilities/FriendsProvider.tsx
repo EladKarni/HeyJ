@@ -3,6 +3,7 @@ import { supabase } from "./Supabase";
 import FriendRequest from "../objects/FriendRequest";
 import Profile from "../objects/Profile";
 import { useProfile } from "./ProfileProvider";
+import { logAgentEvent } from "./AgentLogger";
 
 interface FriendsContextType {
   friendRequests: FriendRequest[];
@@ -20,20 +21,32 @@ interface FriendsContextType {
 const FriendsContext = createContext<FriendsContextType | null>(null);
 
 export const FriendsProvider = ({ children }: { children: React.ReactNode }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FriendsProvider.tsx:22',message:'FriendsProvider rendering',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  logAgentEvent({
+    location: 'FriendsProvider.tsx:FriendsProvider',
+    message: 'FriendsProvider rendering',
+    data: {},
+    hypothesisId: 'A',
+  });
   let profile;
   try {
     const profileContext = useProfile();
     profile = profileContext.profile;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FriendsProvider.tsx:27',message:'FriendsProvider useProfile success',data:{hasProfile:!!profile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'FriendsProvider.tsx:FriendsProvider',
+      message: 'FriendsProvider useProfile success',
+      data: { hasProfile: !!profile },
+      hypothesisId: 'A',
+    });
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'FriendsProvider.tsx:30',message:'FriendsProvider useProfile error',data:{errorMessage:error instanceof Error?error.message:String(error),errorStack:error instanceof Error?error.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'FriendsProvider.tsx:FriendsProvider',
+      message: 'FriendsProvider useProfile error',
+      data: {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      },
+      hypothesisId: 'A',
+    });
     throw error;
   }
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);

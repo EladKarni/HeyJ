@@ -4,6 +4,7 @@ import { supabase } from "./Supabase";
 import { View } from "react-native";
 import Profile from "../objects/Profile";
 import { handleError } from "./errorHandler";
+import { logAgentEvent } from "./AgentLogger";
 
 const ProfileContext = createContext<{
   appReady: boolean;
@@ -46,9 +47,13 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const getProfile = () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:48',message:'getProfile called',data:{hasUser:!!user,userId:user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
+    logAgentEvent({
+      location: 'ProfileProvider.tsx:getProfile',
+      message: 'getProfile called',
+      data: { hasUser: !!user, userId: user?.id },
+      hypothesisId: 'A',
+    });
+
     if (!user) {
       setProfile(null);
       return;
@@ -61,9 +66,18 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
       .select("*")
       .eq("uid", id)
       .then(({ data, error }) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:60',message:'getProfile result',data:{hasData:!!data,hasError:!!error,error:error?.message||null,conversationIds:data?.[0]?.conversations||[],conversationIdsCount:data?.[0]?.conversations?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
+        logAgentEvent({
+          location: 'ProfileProvider.tsx:getProfile:result',
+          message: 'getProfile result',
+          data: {
+            hasData: !!data,
+            hasError: !!error,
+            error: error?.message || null,
+            conversationIds: data?.[0]?.conversations || [],
+            conversationIdsCount: data?.[0]?.conversations?.length || 0,
+          },
+          hypothesisId: 'A',
+        });
         if (error) {
           handleError(error, "ProfileProvider.getProfile");
           setProfile(null);
@@ -101,23 +115,35 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
           filter: "uid=eq." + user.id,
         },
         async (payload) => {
-          // #region agent log
-          const newConversations = (payload.new && typeof payload.new === 'object' && 'conversations' in payload.new && Array.isArray(payload.new.conversations)) 
-            ? payload.new.conversations 
+          const newConversations = (payload.new && typeof payload.new === 'object' && 'conversations' in payload.new && Array.isArray(payload.new.conversations))
+            ? payload.new.conversations
             : [];
-          const oldConversations = (payload.old && typeof payload.old === 'object' && 'conversations' in payload.old && Array.isArray(payload.old.conversations)) 
-            ? payload.old.conversations 
+          const oldConversations = (payload.old && typeof payload.old === 'object' && 'conversations' in payload.old && Array.isArray(payload.old.conversations))
+            ? payload.old.conversations
             : [];
-          fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:103',message:'profile real-time update received',data:{eventType:payload.eventType,userId:user.id,newConversations,oldConversations},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-          // #endregion
+          logAgentEvent({
+            location: 'ProfileProvider.tsx:realtime',
+            message: 'profile real-time update received',
+            data: { eventType: payload.eventType, userId: user.id, newConversations, oldConversations },
+            hypothesisId: 'D',
+          });
+
           await supabase
             .from("profiles")
             .select("*")
             .eq("uid", user.id)
             .then(({ data, error }) => {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProfileProvider.tsx:108',message:'profile refreshed after real-time update',data:{hasData:!!data,conversationIds:data?.[0]?.conversations||[],conversationCount:data?.[0]?.conversations?.length||0,eventType:payload.eventType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-              // #endregion
+              logAgentEvent({
+                location: 'ProfileProvider.tsx:realtime:refresh',
+                message: 'profile refreshed after real-time update',
+                data: {
+                  hasData: !!data,
+                  conversationIds: data?.[0]?.conversations || [],
+                  conversationCount: data?.[0]?.conversations?.length || 0,
+                  eventType: payload.eventType,
+                },
+                hypothesisId: 'D',
+              });
               if (data && data[0]) {
                 const newProfile = Profile.fromJSON(data[0]);
                 setProfile(newProfile);

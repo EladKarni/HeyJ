@@ -1,21 +1,28 @@
+// React
 import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { styles } from "../styles/FriendRequestsScreen.styles";
+import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
+
+// Third-party libraries
+import { Ionicons } from "@expo/vector-icons";
+
+// Utilities & Providers
 import { useProfile } from "../utilities/ProfileProvider";
 import { useFriends } from "../utilities/FriendsProvider";
-import FriendRequest from "../objects/FriendRequest";
-import { Ionicons } from "@expo/vector-icons";
+
+// Hooks
 import { useRequesterProfiles } from "../hooks/useProfileData";
-import { FriendRequestsScreenProps } from "../types/navigation";
+
+// Components
 import IncomingRequestItem from "../components/friendRequests/IncomingRequestItem";
 import OutgoingRequestItem from "../components/friendRequests/OutgoingRequestItem";
 import FriendRequestsEmpty from "../components/friendRequests/FriendRequestsEmpty";
+
+// Objects & Types
+import FriendRequest from "../objects/FriendRequest";
+import { FriendRequestsScreenProps } from "../types/navigation";
+
+// Styles
+import { styles } from "../styles/FriendRequestsScreen.styles";
 
 const FriendRequestsScreen = ({ navigation }: FriendRequestsScreenProps) => {
   const { profile } = useProfile();

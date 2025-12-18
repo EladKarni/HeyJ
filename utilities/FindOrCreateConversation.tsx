@@ -2,6 +2,7 @@ import { supabase } from "./Supabase";
 import Conversation from "../objects/Conversation";
 import UUID from "react-native-uuid";
 import { handleError, handleApiError } from "./errorHandler";
+import { logAgentEvent } from "./AgentLogger";
 
 /**
  * Finds an existing conversation between two users, or creates a new one if it doesn't exist.
@@ -11,9 +12,12 @@ export const findOrCreateConversation = async (
     user1Uid: string,
     user2Uid: string
 ): Promise<{ conversation: Conversation; isNew: boolean }> => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:9', message: 'findOrCreateConversation called', data: { user1Uid, user2Uid }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion
+    logAgentEvent({
+        location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+        message: 'findOrCreateConversation called',
+        data: { user1Uid, user2Uid },
+        hypothesisId: 'A',
+    });
 
     // First, check if a conversation already exists in the database
     // Fetch all conversations and check if any contain both UIDs
@@ -21,9 +25,17 @@ export const findOrCreateConversation = async (
         .from("conversations")
         .select("*");
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:16', message: 'fetched conversations from database', data: { user1Uid, user2Uid, conversationCount: existingConversations?.length || 0, hasError: !!fetchError }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion
+    logAgentEvent({
+        location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+        message: 'fetched conversations from database',
+        data: {
+            user1Uid,
+            user2Uid,
+            conversationCount: existingConversations?.length || 0,
+            hasError: !!fetchError,
+        },
+        hypothesisId: 'A',
+    });
 
     if (fetchError) {
         handleError(fetchError, "FindOrCreateConversation - fetch");
@@ -41,9 +53,17 @@ export const findOrCreateConversation = async (
             ) {
                 // Found existing conversation
                 const conversation = await Conversation.fromJSON(convData);
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:34', message: 'found existing conversation', data: { conversationId: conversation.conversationId, user1Uid, user2Uid, isNew: false }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-                // #endregion
+                logAgentEvent({
+                    location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+                    message: 'found existing conversation',
+                    data: {
+                        conversationId: conversation.conversationId,
+                        user1Uid,
+                        user2Uid,
+                        isNew: false,
+                    },
+                    hypothesisId: 'A',
+                });
                 return { conversation, isNew: false };
             }
         }
@@ -61,25 +81,42 @@ export const findOrCreateConversation = async (
         ]
     );
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:50', message: 'creating new conversation', data: { conversationId, user1Uid, user2Uid }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion
+    logAgentEvent({
+        location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+        message: 'creating new conversation',
+        data: { conversationId, user1Uid, user2Uid },
+        hypothesisId: 'A',
+    });
 
     const { error: insertError } = await supabase
         .from("conversations")
         .insert(conversation.toJSON());
 
     if (insertError) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:56', message: 'error creating conversation', data: { conversationId, error: insertError.message }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-        // #endregion
+        logAgentEvent({
+            location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+            message: 'error creating conversation',
+            data: {
+                conversationId,
+                error: insertError.message,
+            },
+            hypothesisId: 'A',
+        });
         const errorMessage = handleApiError(insertError, "Failed to create conversation");
         throw new Error(errorMessage);
     }
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f5e603aa-4ab7-41d0-b1fe-b8ca210c432d', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'FindOrCreateConversation.tsx:62', message: 'conversation created successfully', data: { conversationId, user1Uid, user2Uid, isNew: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion
+    logAgentEvent({
+        location: 'FindOrCreateConversation.tsx:findOrCreateConversation',
+        message: 'conversation created successfully',
+        data: {
+            conversationId,
+            user1Uid,
+            user2Uid,
+            isNew: true,
+        },
+        hypothesisId: 'A',
+    });
 
     return { conversation, isNew: true };
 };

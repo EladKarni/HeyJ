@@ -1,3 +1,4 @@
+// React
 import React, { useState } from "react";
 import {
   View,
@@ -10,10 +11,14 @@ import {
   TouchableWithoutFeedback,
   TextInput,
 } from "react-native";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+
+// Third-party libraries
+import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from 'expo-clipboard';
+
+// Utilities & Providers
 import { useProfile } from "../../utilities/ProfileProvider";
 import { useFriends } from "../../utilities/FriendsProvider";
-import * as Clipboard from 'expo-clipboard';
 
 interface AddFriendModalProps {
   visible: boolean;
