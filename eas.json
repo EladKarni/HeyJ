@@ -20,11 +20,18 @@
     },
     "preview": {
       "distribution": "internal",
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "distribution": "store",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
       "android": {
         "buildType": "app-bundle"
       }
