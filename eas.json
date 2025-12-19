@@ -25,6 +25,10 @@
       },
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "buildConfiguration": "Release",
+        "enterpriseProvisioning": "adhoc"
       }
     },
     "production": {
