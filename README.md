@@ -2,10 +2,10 @@
 ### Simple, human voice messages — without the friction
 
 <p align="center">
-  <img src="./assets/heyj-logo.png" alt="HeyJ Logo" width="140" />
+  <img src="./assets/branding/heyj-logo.png" alt="HeyJ Logo" width="140" />
 </p>
 
-HeyJ is a **lightweight voice-first messaging app** designed to make sending short voice messages feel as easy and natural as saying *“Hey”*.
+HeyJ is a **voice-first messaging app** designed to make sending short voice messages feel as easy as saying *“Hey.”*
 
 No clutter. No friction. Just press, speak, and send.
 
@@ -13,80 +13,73 @@ No clutter. No friction. Just press, speak, and send.
 
 ## ✨ Features
 
-- 🎙 **Instant Voice Messages**  
-  Record and send short voice messages in seconds.
+- 🎙 Instant voice messages  
+- ⚡ Fast, lightweight UI  
+- 🧠 Human-first design  
+- 📱 iOS, Android & Web (Expo)  
+- 🔒 Privacy-focused architecture  
 
-- 🧠 **Human-First Design**  
-  Built around how people *actually* communicate — quick, casual, and expressive.
+---
 
-- ⚡ **Fast & Lightweight**  
-  Optimized for speed with minimal UI overhead.
+## 🖼 Screenshots & Previews
 
-- 📱 **Cross-Platform**  
-  Built with **Expo + React Native**, supporting iOS, Android, and Web.
+> These images are intentionally reusable for **App Store**, **Play Store**, and **marketing**.
 
-- 🔒 **Privacy-Respecting**  
-  Designed with modern auth and backend best practices.
+### App Screenshots
+<p align="center">
+  <img src="./assets/screenshots/app-home.png" width="22%" />
+  <img src="./assets/screenshots/app-recording.png" width="22%" />
+  <img src="./assets/screenshots/app-inbox.png" width="22%" />
+  <img src="./assets/screenshots/app-profile.png" width="22%" />
+</p>
+
+### App Preview / GIF
+<p align="center">
+  <img src="./assets/previews/record-and-send.gif" width="320" />
+</p>
+
+📌 **Tip:**  
+- Keep screenshots **no UI chrome**
+- Same assets can be used for:
+  - App Store
+  - Google Play
+  - Website hero sections
 
 ---
 
 ## 🧩 Why HeyJ?
 
-Text is great — but voice is **faster**, **more expressive**, and **more human**.
+Text is efficient — but voice is **faster, warmer, and more human**.
 
-HeyJ focuses on:
+HeyJ is built for:
 - Quick check-ins
 - Casual updates
+- Asynchronous voice chats
 - Low-pressure communication
-- Asynchronous voice chats without the formality of calls
-
-Think:  
-> *Voice messages without overthinking it.*
-
----
-
-## 🖼 App Mascot & Visual Language
-
-HeyJ uses a friendly, expressive mascot to reinforce its human-centric approach.
-
-<p align="center">
-  <img src="./assets/heyj-mascot-poses.png" alt="HeyJ Mascot Variations" width="90%" />
-</p>
-
-The mascot appears in multiple poses and contexts:
-- Talking
-- Pointing
-- Holding a phone
-- Celebrating interactions
-
-This visual system is designed to feel **warm, approachable, and fun**.
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Frontend**
-  - React Native
-  - Expo (Web + Mobile)
-  - TypeScript
+**Frontend**
+- React Native
+- Expo (Web + Mobile)
+- TypeScript
 
-- **Backend**
-  - Supabase (Auth, Database, Storage)
-  - Realtime messaging
+**Backend**
+- Supabase (Auth, DB, Storage)
+- Realtime messaging
 
-- **Testing**
-  - Jest
-  - Playwright (planned / in progress)
-
-- **CI / Deployment**
-  - Expo
-  - Modern Node tooling
+**Testing**
+- Jest
+- Playwright (in progress)
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the repo
 ```bash
 git clone https://github.com/EladKarni/HeyJ.git
 cd HeyJ
+npm install
+npx expo start
