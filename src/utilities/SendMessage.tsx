@@ -1,6 +1,5 @@
 import { NavigationProp } from "@react-navigation/native";
 import { Alert } from "react-native";
-import { useProfile } from "./ProfileProvider";
 import { handleError, handleApiError } from "./errorHandler";
 import UUID from "react-native-uuid";
 import { supabase } from "@utilities/Supabase";
@@ -9,7 +8,6 @@ import Profile from "@objects/Profile";
 import Conversation from "@objects/Conversation";
 import { RootStackParamList } from "@app-types/navigation";
 import { logAgentEvent } from "./AgentLogger";
-import { sendPushNotification } from "./Onesignal";
 
 export const sendMessage = async (
   navigation: NavigationProp<RootStackParamList>,
@@ -237,22 +235,6 @@ export const sendMessage = async (
       } else {
         console.log("✅ Current user's profile updated");
       }
-    }
-
-    // Send push notification to recipient
-    if (otherUid) {
-      console.log("📨 Sending push notification to recipient:", otherUid);
-      sendPushNotification(
-        otherUid,
-        profile.name,
-        profile.profilePicture,
-        conversationId,
-        url,
-        'message'
-      ).catch((error) => {
-        console.warn("⚠️ Failed to send push notification:", error);
-        // Don't block message sending if notification fails
-      });
     }
 
     console.log("✅ Message sent successfully!");

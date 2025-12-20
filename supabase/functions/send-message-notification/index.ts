@@ -76,12 +76,18 @@ Deno.serve(async (req) => {
     }
 
     // Step 4: Send push notification via OneSignal REST API
-    // TEMPORARY: Hardcoded for testing
-    const oneSignalAppId = "1d79c718-998c-49d0-89cb-37c5ea140309";
-    const oneSignalRestApiKey =
-      "os_v2_app_dv44ogezrre5bcolg7c6ufadbfyd6oqwz2aedgm4ghv3joomn4r3k65zl5cmkrfwpie7g5qvll7hmoybvvsml3mj4rhfodvtpkyk4by";
+    const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
+    const oneSignalRestApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
-    console.log("🔑 Using hardcoded OneSignal credentials for testing");
+    if (!oneSignalAppId || !oneSignalRestApiKey) {
+      console.error("❌ OneSignal credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "OneSignal credentials not configured" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("🔑 Using OneSignal credentials from environment");
 
     const notificationResponse = await fetch(
       "https://api.onesignal.com/notifications",
