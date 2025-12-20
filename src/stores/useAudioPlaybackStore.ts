@@ -7,6 +7,7 @@ import { playAudioFromUri } from "@services/audioService";
 import { markMessageAsRead } from "@utilities/MarkMessageAsRead";
 import { AudioPlayer, AudioPlayerStatus } from "@app-types/audio";
 import { sortBy } from "lodash";
+import { Platform } from "react-native";
 import {
   NotificationClickEvent,
   NotificationWillDisplayEvent,
@@ -547,6 +548,11 @@ export const useAudioPlaybackStore = create<AudioPlaybackState>((set, get) => ({
   },
 
   initializeNotificationHandlers: (setSelectedConversation, profileId, audioPlayer) => {
+    // Skip notification handlers on web platform
+    if (Platform.OS === 'web') {
+      return () => {}; // Return empty cleanup function
+    }
+
     const onForeground = (event: NotificationWillDisplayEvent) => {
       const data = event.notification.additionalData as NotificationData;
 

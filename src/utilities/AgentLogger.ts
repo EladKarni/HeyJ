@@ -12,9 +12,12 @@ interface LogData {
   hypothesisId?: string;
 }
 
+// Track if the endpoint is blocked to prevent spam
+let isEndpointBlocked = false;
+
 export const logAgentEvent = (logData: LogData): void => {
   // Only log in development
-  if (__DEV__) {
+  if (__DEV__ && !isEndpointBlocked) {
     const payload = {
       ...logData,
       timestamp: Date.now(),
@@ -26,7 +29,12 @@ export const logAgentEvent = (logData: LogData): void => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }).catch(() => {
+    }).catch((error) => {
+      // If endpoint is blocked by browser extension, stop trying
+      if (error?.message?.includes('Failed to fetch') || error?.name === 'TypeError') {
+        isEndpointBlocked = true;
+        console.warn('AgentLogger: Endpoint blocked by browser extension. Disabling further logging attempts.');
+      }
       // Silently fail - logging should never break the app
     });
   }
