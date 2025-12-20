@@ -12,12 +12,21 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
-    "platforms": ["ios", "android", "web"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "remote-notification"],
+        "UIBackgroundModes": [
+          "audio",
+          "remote-notification"
+        ],
         "NSCameraUsageDescription": "Allow this app to access camera.",
         "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
         "ITSAppUsesNonExemptEncryption": false
@@ -31,7 +40,10 @@
         "image": "./assets/splash.png"
       },
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default", "Default"]
+        "com.apple.developer.applesignin": [
+          "Default",
+          "Default"
+        ]
       }
     },
     "android": {
@@ -69,7 +81,11 @@
           "photosPermission": "The app accesses your photos."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sqlite",
+      "expo-font",
+      "expo-asset",
+      "expo-audio"
     ],
     "extra": {
       "eas": {

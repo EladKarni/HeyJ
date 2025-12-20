@@ -14,6 +14,7 @@
       "@services/*": ["./src/services/*"],
       "@styles/*": ["./src/styles/*"],
       "@app-types/*": ["./src/types/*"],
+      "@database/*": ["./src/database/*"],
       "@assets/*": ["./assets/*"],
       "@tests/*": ["./tests/*"],
       "react-native-onesignal": ["./tests/mocks/react-native-onesignal.d.ts"],

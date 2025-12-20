@@ -98,7 +98,7 @@ const ViewProfileModal = () => {
       return;
     }
 
-    const fileName = `profile_${profile.uid}_${new Date().getTime()}.png`;
+    const fileName = `${profile.uid}/profile_${profile.uid}_${Date.now()}.png`;
     const response = await fetch(uri);
     const buffer = await response.arrayBuffer();
 
@@ -165,7 +165,7 @@ const ViewProfileModal = () => {
 
     if (data && data[0]) {
       const otherProfile = data[0];
-      
+
       try {
         // Use findOrCreateConversation to ensure we don't create duplicates
         const result = await findOrCreateConversation(profile.uid, uid);
