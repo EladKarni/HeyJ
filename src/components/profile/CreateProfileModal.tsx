@@ -30,6 +30,7 @@ import Profile from "@objects/Profile";
 
 // Styles
 import { styles } from "@styles/components/profile/CreateProfileModal.styles";
+import AppLogger from "@/utilities/AppLogger";
 
 const CreateProfileModal = () => {
   const { appReady, user, profile, saveProfile, getProfile } = useProfile();
@@ -57,13 +58,13 @@ const CreateProfileModal = () => {
   }, [user]);
 
   const getProfilePic = async () => {
-    console.log("📸 CreateProfileModal: Profile picture button pressed");
+    AppLogger.debug("📸 CreateProfileModal: Profile picture button pressed");
 
     const { status } = await requestMediaLibraryPermissionsAsync();
-    console.log("📸 CreateProfileModal: Permission status:", status);
+    AppLogger.debug("📸 CreateProfileModal: Permission status:", { status });
 
     if (status === "granted") {
-      console.log("📸 CreateProfileModal: Opening image picker...");
+      AppLogger.debug("📸 CreateProfileModal: Opening image picker...");
       const newPic = await launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsMultipleSelection: false,
@@ -73,7 +74,7 @@ const CreateProfileModal = () => {
         selectionLimit: 1,
       });
 
-      console.log("📸 CreateProfileModal: Result:", newPic.canceled ? "canceled" : "selected");
+      AppLogger.debug("📸 CreateProfileModal: Result:", { canceled: newPic.canceled });
 
       if (newPic.canceled) {
         Alert.alert(
@@ -85,7 +86,7 @@ const CreateProfileModal = () => {
       }
 
       if (!newPic.canceled && newPic.assets[0].uri !== null) {
-        console.log("📸 CreateProfileModal: Image selected:", newPic.assets[0].uri);
+        AppLogger.debug("📸 CreateProfileModal: Image selected:", { uri: newPic.assets[0].uri });
         setSelectedProfileImage(newPic.assets[0]);
       } else {
         Alert.alert("Something went wrong...", "Please try again.", [
@@ -93,10 +94,10 @@ const CreateProfileModal = () => {
         ]);
       }
     } else if (status === "undetermined") {
-      console.log("📸 CreateProfileModal: Permission undetermined, requesting again...");
+      AppLogger.debug("📸 CreateProfileModal: Permission undetermined, requesting again...");
       getProfilePic();
     } else {
-      console.log("📸 CreateProfileModal: Permission denied");
+      AppLogger.debug("📸 CreateProfileModal: Permission denied");
       Alert.alert(
         "Something went wrong...",
         "Please open settings and confirm that this app has permission to the selected photo.",
@@ -109,6 +110,13 @@ const CreateProfileModal = () => {
   };
 
   const uploadProfilePic = async () => {
+    // Ensure user is authenticated before upload
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      AppLogger.error("User not authenticated for profile image upload");
+      return null;
+    }
+
     const fileName = `profile_${uid}_${new Date().getTime()}.png`;
     const response = await fetch(selectedProfileImage!.uri);
     const buffer = await response.arrayBuffer();
@@ -118,7 +126,7 @@ const CreateProfileModal = () => {
       .upload(fileName, buffer, { contentType: "image/png" });
 
     if (error) {
-      console.error("Error uploading profile image:", error.message, error);
+      AppLogger.error("Error uploading profile image:", { error: error.message });
       const userCode = `${name.replace(/\s+/g, '')}@${Math.floor(Math.random() * 9999)}`;
       saveProfile(
         new Profile(uid, profileImage, name, email, [], userCode)
@@ -130,7 +138,7 @@ const CreateProfileModal = () => {
         .from("profile_images")
         .getPublicUrl(fileName).data.publicUrl;
 
-      console.log(publicUrl);
+      AppLogger.debug("Profile image uploaded:", { publicUrl });
       return publicUrl;
     }
   };

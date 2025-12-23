@@ -20,6 +20,8 @@ import { signInWithEmail } from "@utilities/AuthHelper";
 // Types & Styles
 import { LoginScreenProps } from "@app-types/navigation";
 import { styles } from "@styles/screens/LoginScreen.styles";
+import { colors } from "@styles/theme";
+import AppLogger from "@/utilities/AppLogger";
 
 
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
@@ -36,19 +38,19 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 
     setLoading(true);
     try {
-      console.log('🎯 LoginScreen: Starting signin...');
+      AppLogger.debug('🎯 LoginScreen: Starting signin...');
       await signInWithEmail(email, password);
-      console.log('🎯 LoginScreen: Signin completed');
+      AppLogger.debug('🎯 LoginScreen: Signin completed');
       // Keep loading true - auth state change will handle navigation
     } catch (error: any) {
-      console.error('🎯 LoginScreen: Auth error:', error);
+      AppLogger.error('🎯 LoginScreen: Auth error:', error);
       Alert.alert("Error", error.message || "Authentication failed");
       setLoading(false);
       return;
     }
 
     // If we get here with loading still true, we're waiting for auth state change
-    console.log('🎯 LoginScreen: Waiting for auth state change...');
+    AppLogger.debug('🎯 LoginScreen: Waiting for auth state change...');
   };
 
   return (
@@ -71,6 +73,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
             <TextInput
               style={styles.input}
               placeholder="Email"
+              placeholderTextColor={colors.textTertiary}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -83,6 +86,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor={colors.textTertiary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}

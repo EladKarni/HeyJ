@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { PanelSettingsStorage } from "@utilities/PanelSettingsStorage";
+import AppLogger from "@/utilities/AppLogger";
 
 interface PanelState {
   isCollapsed: boolean;
@@ -23,7 +24,7 @@ export const usePanelStateStore = create<PanelState>((set, get) => ({
       const savedCollapsed = await PanelSettingsStorage.getPanelCollapsed();
       set({ isCollapsed: savedCollapsed, isLoading: false });
     } catch (error) {
-      console.error('Error loading panel state:', error);
+      AppLogger.error("Error loading panel state:", error);
       set({ isLoading: false });
     }
   },

@@ -19,6 +19,7 @@ import { saveConversation, getRecentConversations } from '@database/repositories
 import { syncManager } from '@services/syncManager';
 import Conversation from '@objects/Conversation';
 import Message from '@objects/Message';
+import AppLogger from "@/utilities/AppLogger";
 
 export const CacheTestScreen: React.FC = () => {
   const [logs, setLogs] = useState<string[]>([]);
@@ -27,7 +28,7 @@ export const CacheTestScreen: React.FC = () => {
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
-    console.log(message);
+    AppLogger.debug(message);
   };
 
   const handleInitDatabase = async () => {

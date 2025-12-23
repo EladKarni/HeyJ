@@ -9,6 +9,7 @@ import {
   PendingMessage,
 } from '@database/repositories/offlineQueueRepository';
 import NetInfo from '@react-native-community/netinfo';
+import AppLogger from "../utilities/AppLogger";
 
 class OfflineMessageQueue {
   private isProcessing = false;
@@ -18,10 +19,10 @@ class OfflineMessageQueue {
    */
   async queueMessage(conversationId: string, audioUri: string): Promise<string> {
     const localId = await addPendingMessage(conversationId, audioUri);
-    console.log('📤 Message queued for offline sending:', localId);
+    AppLogger.debug('📤 Message queued for offline sending', { localId });
 
     // Try to process queue immediately (will skip if offline)
-    this.processQueue().catch(console.error);
+    this.processQueue().catch((error) => AppLogger.error("Error processing queue", error instanceof Error ? error : new Error(String(error))));
 
     return localId;
   }
@@ -31,14 +32,14 @@ class OfflineMessageQueue {
    */
   async processQueue(): Promise<void> {
     if (this.isProcessing) {
-      console.log('⏳ Queue already processing, skipping...');
+      AppLogger.debug('⏳ Queue already processing, skipping...');
       return;
     }
 
     // Check network connectivity
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected) {
-      console.log('📡 No network connection, skipping queue processing');
+      AppLogger.debug('📡 No network connection, skipping queue processing');
       return;
     }
 
@@ -46,13 +47,13 @@ class OfflineMessageQueue {
 
     try {
       const pendingMessages = await getPendingMessages();
-      console.log(`📋 Processing ${pendingMessages.length} pending messages`);
+      AppLogger.debug(`📋 Processing ${pendingMessages.length} pending messages`);
 
       for (const pending of pendingMessages) {
         try {
           await this.sendPendingMessage(pending);
         } catch (error) {
-          console.error('Error sending pending message:', error);
+          AppLogger.error('Error sending pending message:', error instanceof Error ? error : new Error(String(error)));
           // Continue with next message
         }
       }
@@ -127,11 +128,11 @@ class OfflineMessageQueue {
 
       // Success - delete from queue
       await deletePendingMessage(pending.localId);
-      console.log('✅ Pending message sent successfully:', pending.localId);
+      AppLogger.debug('✅ Pending message sent successfully', { localId: pending.localId });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await updateMessageStatus(pending.localId, 'failed', errorMessage);
-      console.error('❌ Failed to send pending message:', errorMessage);
+      AppLogger.error('❌ Failed to send pending message:', new Error(errorMessage));
       throw error;
     }
   }
@@ -150,8 +151,8 @@ class OfflineMessageQueue {
   startNetworkListener(): () => void {
     const unsubscribe = NetInfo.addEventListener(state => {
       if (state.isConnected) {
-        console.log('📡 Network connected, processing queue...');
-        this.processQueue().catch(console.error);
+        AppLogger.debug('📡 Network connected, processing queue...');
+    this.processQueue().catch((error) => AppLogger.error("Error processing queue", error instanceof Error ? error : new Error(String(error))));
       }
     });
 

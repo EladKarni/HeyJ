@@ -1,7 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppLogger from "@/utilities/AppLogger";
 
 const STORAGE_KEYS = {
-  PANEL_COLLAPSED: '@HeyJ:panelSettings:collapsed',
+  PANEL_COLLAPSED: "@HeyJ:panelSettings:collapsed",
 };
 
 const DEFAULTS = {
@@ -21,13 +22,13 @@ export class PanelSettingsStorage {
       }
       const parsed = JSON.parse(value);
       // JSON.parse should return a boolean, but ensure it's actually a boolean
-      if (typeof parsed === 'boolean') {
+      if (typeof parsed === "boolean") {
         return parsed;
       }
       // Fallback: convert to boolean if somehow it's not
-      return parsed === true || parsed === 'true';
+      return parsed === true || parsed === "true";
     } catch (error) {
-      console.error('Error loading panel collapsed setting:', error);
+      AppLogger.error("Error loading panel collapsed setting:", error);
       return DEFAULTS.PANEL_COLLAPSED;
     }
   }
@@ -38,9 +39,12 @@ export class PanelSettingsStorage {
    */
   static async setPanelCollapsed(collapsed: boolean): Promise<void> {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.PANEL_COLLAPSED, JSON.stringify(collapsed));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.PANEL_COLLAPSED,
+        JSON.stringify(collapsed)
+      );
     } catch (error) {
-      console.error('Error saving panel collapsed setting:', error);
+      AppLogger.error("Error saving panel collapsed setting:", error);
     }
   }
 }

@@ -4,6 +4,7 @@ import { supabase } from "./Supabase";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import { Alert } from "react-native";
 import { removeToken } from "./Onesignal";
+import AppLogger from "@/utilities/AppLogger";
 
 const createSessionFromUrl = async (url: string) => {
   const { params, errorCode } = QueryParams.getQueryParams(url);
@@ -87,67 +88,64 @@ export const signUpWithEmail = async (
     profilePicture?: string;
   }
 ) => {
-  console.log('🔐 Starting signup for:', email);
-  
+  AppLogger.debug('🔐 Starting signup for', { email });
+
   try {
-    // First, test basic connectivity
-    console.log('🔍 Testing connectivity to Supabase...');
-    const { supabaseUrl } = require('./Supabase');
-    console.log('   Target URL:', supabaseUrl);
-    
+    // Test basic connectivity with a simpler approach
+    AppLogger.debug('🔍 Testing connectivity to Supabase...');
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    AppLogger.debug('Target URL', { url: supabaseUrl });
+
     try {
-      const healthCheck = await fetch(`${supabaseUrl}/auth/v1/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Simple health check
+      const healthCheck = await fetch(`${supabaseUrl}/rest/v1/`, {
+        method: 'HEAD',
       });
-      console.log('✅ Health check status:', healthCheck.status);
-      const healthData = await healthCheck.json();
-      console.log('   Health response:', healthData);
+      AppLogger.debug('Health check status', { status: healthCheck.status });
     } catch (healthError: any) {
-      console.error('❌ Health check failed:', healthError.message);
-      throw new Error(`Cannot connect to Supabase at ${supabaseUrl}. Make sure Supabase is running and accessible from your device.`);
+      AppLogger.error('Health check failed', healthError);
+      // Don't throw - let actual signup attempt determine connectivity
+      AppLogger.debug('Continuing with signup despite health check failure');
     }
-    
-    console.log('📤 Sending signup request...');
-    
+
+    AppLogger.debug('📤 Sending signup request...');
+
     // Add a timeout to prevent hanging forever
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Signup request timed out after 30 seconds')), 30000);
     });
 
-    const signupPromise = metadata 
+    const signupPromise = metadata
       ? supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: metadata,
-          },
-        })
+        email,
+        password,
+        options: {
+          data: metadata,
+        },
+      })
       : supabase.auth.signUp({
-          email,
-          password,
-        });
+        email,
+        password,
+      });
 
     const { data, error } = await Promise.race([signupPromise, timeoutPromise]) as any;
 
-    console.log('📥 Signup response received');
-    console.log('   Error:', error);
-    console.log('   User:', data?.user?.id);
-    console.log('   Session:', data?.session ? 'Present' : 'None');
+    AppLogger.debug('📥 Signup response received');
+    AppLogger.debug('Signup error', { error });
+    AppLogger.debug('User ID', { userId: data?.user?.id });
+    AppLogger.debug('Session status', { hasSession: !!data?.session });
 
     if (error) {
-      console.error('❌ Signup error:', error);
+      AppLogger.error('❌ Signup error', error);
       throw error;
     }
-    
-    console.log('✅ Signup successful');
+
+    AppLogger.debug('✅ Signup successful');
     return data;
   } catch (err: any) {
-    console.error('💥 Signup exception:', err);
-    console.error('   Message:', err?.message);
-    console.error('   Stack:', err?.stack);
+    AppLogger.error('💥 Signup exception:', err);
+    AppLogger.error('   Message:', err?.message);
+    AppLogger.error('   Stack:', err?.stack);
     throw err;
   }
 };

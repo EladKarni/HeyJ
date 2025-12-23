@@ -5,19 +5,20 @@
  * or localStorage fallback for web platform.
  */
 
-import { DATABASE_VERSION } from './schema';
+import { DATABASE_VERSION } from "./schema";
+import AppLogger from "@/utilities/AppLogger";
 
 // Mock database for web
 let isInitialized = false;
 
 export const initDatabase = async (): Promise<void> => {
-  console.warn('📦 Database not available on web - using in-memory fallback');
+  AppLogger.warn("📦 Database not available on web - using in-memory fallback");
   isInitialized = true;
 };
 
 export const getDatabase = (): any => {
   if (!isInitialized) {
-    throw new Error('Database not initialized. Call initDatabase() first.');
+    throw new Error("Database not initialized. Call initDatabase() first.");
   }
   // Return mock database
   return {
@@ -31,17 +32,20 @@ export const getDatabase = (): any => {
 
 export const closeDatabase = async (): Promise<void> => {
   isInitialized = false;
-  console.log('📦 Database closed (web no-op)');
+  AppLogger.debug("📦 Database closed (web no-op)");
 };
 
-export const setSyncMetadata = async (key: string, value: string): Promise<void> => {
-  if (typeof window !== 'undefined') {
+export const setSyncMetadata = async (
+  key: string,
+  value: string
+): Promise<void> => {
+  if (typeof window !== "undefined") {
     localStorage.setItem(`sync_metadata_${key}`, value);
   }
 };
 
 export const getSyncMetadata = async (key: string): Promise<string | null> => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     return localStorage.getItem(`sync_metadata_${key}`);
   }
   return null;

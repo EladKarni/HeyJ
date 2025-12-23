@@ -69,10 +69,10 @@ export const useConversationListStore = create<ConversationListState>(
       });
 
       // Add conversations below friend requests
-      // Sort conversations by last message timestamp (empty conversations go to the end)
+      // Sort conversations by last message timestamp (empty conversations near the top for visibility)
       const sortedConversations = sortBy(conversations, (c) => {
         if (c.messages.length === 0) {
-          return new Date(0); // Empty conversations sorted to the end
+          return new Date(); // Empty conversations sorted near top with current time
         }
         return lastMessageTimestamp(c);
       }).reverse();

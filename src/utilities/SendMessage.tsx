@@ -8,6 +8,7 @@ import Profile from "@objects/Profile";
 import Conversation from "@objects/Conversation";
 import { RootStackParamList } from "@app-types/navigation";
 import { logAgentEvent } from "./AgentLogger";
+import AppLogger from "@/utilities/AppLogger";
 
 export const sendMessage = async (
   navigation: NavigationProp<RootStackParamList>,
@@ -18,42 +19,111 @@ export const sendMessage = async (
   uri: string,
   conversationId: string
 ) => {
-  console.log("📨 sendMessage called with conversationId:", conversationId);
+  AppLogger.debug("📨 sendMessage called with conversationId", { conversationId });
+  
+  // Debug: Check if this specific conversation is causing issues
+  const TARGET_ID = "510a9c8e-d532-411c-9b46-c885eecbf33d";
+  const isTargetConversation = conversationId === TARGET_ID;
+  
+  if (isTargetConversation) {
+    AppLogger.debug("🎯 DEBUG: This is the target conversation!", { conversationId });
+    
+    // Check user profile directly
+    if (profileData.profile) {
+      AppLogger.debug("👤 User profile check", {
+        uid: profileData.profile.uid,
+        hasConversations: !!profileData.profile.conversations,
+        conversationCount: profileData.profile.conversations?.length || 0,
+        hasTargetConversation: profileData.profile.conversations?.includes(conversationId) || false,
+        allConversationIds: profileData.profile.conversations
+      });
+    }
+    
+    // Check conversations array
+    AppLogger.debug("💬 Conversations array check", {
+      conversationCount: profileData.conversations.length,
+      hasTargetConversation: profileData.conversations.some(c => c.conversationId === conversationId),
+      allConversationIds: profileData.conversations.map(c => c.conversationId)
+    });
+  }
 
   const { profile, conversations } = profileData;
 
   if (!profile) {
-    console.error("❌ No profile available in sendMessage");
+    AppLogger.error("❌ No profile available in sendMessage");
     Alert.alert("Error", "You must be logged in to send messages.");
     return;
   }
 
-  const conversation = conversations.find(
+  let conversation = conversations.find(
     (c) => c.conversationId === conversationId
   );
 
+  // If not found in local array, try to fetch it directly from database
   if (!conversation) {
-    console.error("❌ Conversation not found:", conversationId);
-    console.log("Available conversations:", conversations.map(c => c.conversationId));
-    Alert.alert("Error", "Conversation not found. Please try again.");
-    return;
+    AppLogger.warn("⚠️ Conversation not found in local array, fetching from database", { conversationId });
+    AppLogger.debug("Available conversations:", { conversationIds: conversations.map(c => c.conversationId) });
+    
+    try {
+      const { data: conversationData, error: fetchError } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("conversationId", conversationId)
+        .single();
+
+      if (fetchError) {
+        AppLogger.error("❌ Error fetching conversation from database", fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
+        Alert.alert("Error", "Conversation not found. Please try again.");
+        return;
+      }
+
+      if (!conversationData) {
+        AppLogger.error("❌ Conversation not found in database", { conversationId });
+        Alert.alert("Error", "Conversation not found. Please try again.");
+        return;
+      }
+
+      // Create Conversation object from database data
+      conversation = await Conversation.fromJSON(conversationData);
+      AppLogger.debug("✅ Successfully fetched conversation from database", { conversationId: conversation.conversationId });
+      
+      // Also ensure this conversation is added to user's profile conversations array
+      // This prevents future "not found" issues
+      if (!profile.conversations.includes(conversationId)) {
+        AppLogger.debug("📝 Adding conversation to user profile for future access", { conversationId });
+        const { error: updateProfileError } = await supabase
+          .from("profiles")
+          .update({
+            conversations: [...profile.conversations, conversationId],
+          })
+          .eq("uid", profile.uid);
+          
+        if (updateProfileError) {
+          AppLogger.warn("⚠️ Failed to update user profile with new conversation", updateProfileError instanceof Error ? updateProfileError : new Error(String(updateProfileError)));
+        }
+      }
+    } catch (error) {
+      AppLogger.error("❌ Error creating conversation from database data", error instanceof Error ? error : new Error(String(error)));
+      Alert.alert("Error", "Conversation not found. Please try again.");
+      return;
+    }
   }
 
-  console.log("✅ Found conversation:", conversation.conversationId);
+  AppLogger.debug("✅ Found conversation", { conversationId: conversation.conversationId });
 
   try {
     const messageId = UUID.v4().toString();
     const fileName = `message_${messageId}.mp3`;
 
-    console.log("📤 Fetching audio from URI:", uri);
+    AppLogger.debug("📤 Fetching audio from URI", { uri });
     const response = await fetch(uri);
     if (!response.ok) {
       throw new Error(`Failed to fetch audio: ${response.statusText}`);
     }
     const buffer = await response.arrayBuffer();
-    console.log("✅ Audio fetched, size:", buffer.byteLength);
+    AppLogger.debug("✅ Audio fetched, size", { size: buffer.byteLength });
 
-    console.log("☁️ Uploading to Supabase storage...");
+    AppLogger.debug("☁️ Uploading to Supabase storage", { fileName });
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("message_audios")
       .upload(fileName, buffer, { contentType: "audio/mp3" });
@@ -69,15 +139,15 @@ export const sendMessage = async (
       return;
     }
 
-    console.log("✅ Audio uploaded, path:", uploadData.path);
+    AppLogger.debug("✅ Audio uploaded, path", { path: uploadData.path });
     const url = supabase.storage
       .from("message_audios")
       .getPublicUrl(uploadData.path).data.publicUrl;
-    console.log("✅ Public URL:", url);
+    AppLogger.debug("✅ Public URL", { url });
 
     const message = new Message(messageId, new Date(), profile.uid, url, false);
 
-    console.log("💾 Inserting message into database...");
+    AppLogger.debug("💾 Inserting message into database...");
     const { data: messageData, error: messageError } = await supabase
       .from("messages")
       .insert(message.toJSON());
@@ -88,7 +158,7 @@ export const sendMessage = async (
       return;
     }
 
-    console.log("✅ Message inserted, updating conversation...");
+    AppLogger.debug("✅ Message inserted, updating conversation...");
     const updatedMessages = [
       ...conversation.toJSON().messages,
       message.messageId,
@@ -107,7 +177,7 @@ export const sendMessage = async (
       return;
     }
 
-    console.log("✅ Conversation updated, ensuring both users have it in their profiles...");
+    AppLogger.debug("✅ Conversation updated, ensuring both users have it in their profiles...");
     logAgentEvent({
       location: 'SendMessage.tsx:sendMessage',
       message: 'conversation updated, checking profiles',
@@ -160,7 +230,7 @@ export const sendMessage = async (
 
         // Add conversation ID if not already present
         if (!otherConversations.includes(conversationId)) {
-          console.log("📝 Adding conversation to other user's profile...");
+          AppLogger.debug("📝 Adding conversation to other user's profile...");
           logAgentEvent({
             location: 'SendMessage.tsx:sendMessage',
             message: 'updating other user profile with conversation',
@@ -190,9 +260,9 @@ export const sendMessage = async (
           });
 
           if (updateOtherError) {
-            console.error("⚠️ Error updating other user's profile:", updateOtherError);
+            AppLogger.error("⚠️ Error updating other user's profile:", updateOtherError);
           } else {
-            console.log("✅ Other user's profile updated");
+            AppLogger.debug("✅ Other user's profile updated");
           }
         } else {
           logAgentEvent({
@@ -222,7 +292,7 @@ export const sendMessage = async (
       : [];
 
     if (!currentConversations.includes(conversationId)) {
-      console.log("📝 Adding conversation to current user's profile...");
+      AppLogger.debug("📝 Adding conversation to current user's profile...");
       const { error: updateCurrentError } = await supabase
         .from("profiles")
         .update({
@@ -231,13 +301,13 @@ export const sendMessage = async (
         .eq("uid", profile.uid);
 
       if (updateCurrentError) {
-        console.error("⚠️ Error updating current user's profile:", updateCurrentError);
+        AppLogger.error("⚠️ Error updating current user's profile:", updateCurrentError);
       } else {
-        console.log("✅ Current user's profile updated");
+        AppLogger.debug("✅ Current user's profile updated");
       }
     }
 
-    console.log("✅ Message sent successfully!");
+    AppLogger.debug("✅ Message sent successfully!");
   } catch (error: any) {
     handleError(error, "SendMessage", true, "Failed to send message");
   }

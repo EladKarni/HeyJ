@@ -1,17 +1,18 @@
-import * as SQLite from 'expo-sqlite';
-import { DATABASE_NAME, DATABASE_VERSION, SCHEMA } from './schema';
+import * as SQLite from "expo-sqlite";
+import { DATABASE_NAME, DATABASE_VERSION, SCHEMA } from "./schema";
+import AppLogger from "@/utilities/AppLogger";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export const initDatabase = async (): Promise<void> => {
   try {
     if (db) {
-      console.log('📦 Database already initialized');
+      AppLogger.debug("📦 Database already initialized");
       return;
     }
 
     db = await SQLite.openDatabaseAsync(DATABASE_NAME);
-    console.log('📦 Database opened successfully');
+    AppLogger.debug("📦 Database opened successfully");
 
     // Create tables
     await db.execAsync(SCHEMA.CONVERSATIONS);
@@ -25,19 +26,19 @@ export const initDatabase = async (): Promise<void> => {
       await db.execAsync(index);
     }
 
-    console.log('✅ Database schema created');
+    AppLogger.debug("✅ Database schema created");
 
     // Set database version
-    await setSyncMetadata('db_version', DATABASE_VERSION.toString());
+    await setSyncMetadata("db_version", DATABASE_VERSION.toString());
   } catch (error) {
-    console.error('❌ Error initializing database:', error);
+    AppLogger.error("❌ Error initializing database:", error);
     throw error;
   }
 };
 
 export const getDatabase = (): SQLite.SQLiteDatabase => {
   if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.');
+    throw new Error("Database not initialized. Call initDatabase() first.");
   }
   return db;
 };
@@ -46,15 +47,18 @@ export const closeDatabase = async (): Promise<void> => {
   if (db) {
     await db.closeAsync();
     db = null;
-    console.log('📦 Database closed');
+    AppLogger.debug("📦 Database closed");
   }
 };
 
 // Metadata helpers
-export const setSyncMetadata = async (key: string, value: string): Promise<void> => {
+export const setSyncMetadata = async (
+  key: string,
+  value: string
+): Promise<void> => {
   const database = getDatabase();
   await database.runAsync(
-    'INSERT OR REPLACE INTO sync_metadata (key, value, updatedAt) VALUES (?, ?, ?)',
+    "INSERT OR REPLACE INTO sync_metadata (key, value, updatedAt) VALUES (?, ?, ?)",
     [key, value, Date.now()]
   );
 };
@@ -62,7 +66,7 @@ export const setSyncMetadata = async (key: string, value: string): Promise<void>
 export const getSyncMetadata = async (key: string): Promise<string | null> => {
   const database = getDatabase();
   const result = await database.getFirstAsync<{ value: string }>(
-    'SELECT value FROM sync_metadata WHERE key = ?',
+    "SELECT value FROM sync_metadata WHERE key = ?",
     [key]
   );
   return result?.value || null;

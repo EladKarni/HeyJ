@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 // Utilities & Providers
 import { useProfile } from "@utilities/ProfileProvider";
-import { useFriends } from "@utilities/FriendsProvider";
+import { useFriends } from "../providers/FriendshipProvider";
 
 // Hooks
 import { useRequesterProfiles } from "@hooks/useProfileData";

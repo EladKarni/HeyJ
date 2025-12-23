@@ -6,6 +6,7 @@ import Profile from "@objects/Profile";
 import { handleError } from "./errorHandler";
 import { logAgentEvent } from "./AgentLogger";
 import { initializeOneSignal } from "./Onesignal";
+import AppLogger from "@/utilities/AppLogger";
 
 const ProfileContext = createContext<{
   appReady: boolean;
@@ -84,7 +85,7 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
           setProfile(null);
           return;
         }
-        
+
         if (data && data[0]) {
           try {
             const profile = Profile.fromJSON(data[0]);
@@ -162,13 +163,13 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Initialize OneSignal when user is authenticated
     if (user?.id) {
-      console.log('🔔 Attempting OneSignal initialization for user:', user.id);
+      AppLogger.debug('🔔 Attempting OneSignal initialization for user:', user.id);
       initializeOneSignal(user.id)
         .then(() => {
-          console.log('✅ OneSignal initialization complete');
+          AppLogger.debug('✅ OneSignal initialization complete');
         })
         .catch((error) => {
-          console.error('❌ OneSignal initialization failed:', error);
+          AppLogger.error('❌ OneSignal initialization failed:', error);
           handleError(error, 'ProfileProvider - OneSignal initialization');
         });
     }

@@ -15,6 +15,7 @@ import { logAgentEvent } from "@utilities/AgentLogger";
 import AppNavigator from "@components/navigation/AppNavigator";
 import AuthNavigator from "@components/navigation/AuthNavigator";
 
+
 global.Buffer = require("buffer").Buffer;
 
 // Global error handler

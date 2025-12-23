@@ -1,5 +1,6 @@
-import { sendPushNotification } from './Onesignal';
-import { supabase } from './Supabase';
+import { sendPushNotification } from "./Onesignal";
+import { supabase } from "./Supabase";
+import AppLogger from "@/utilities/AppLogger";
 
 /**
  * Test push notification flow
@@ -10,31 +11,31 @@ export async function testPushNotifications(
   toUserId: string
 ): Promise<void> {
   try {
-    console.log('🧪 Testing push notification flow...');
+    AppLogger.debug("🧪 Testing push notification flow...");
 
     // 1. Check if sender has profile
     const { data: fromProfile } = await supabase
-      .from('profiles')
-      .select('name, profilePicture')
-      .eq('uid', fromUserId)
+      .from("profiles")
+      .select("name, profilePicture")
+      .eq("uid", fromUserId)
       .single();
 
     if (!fromProfile) {
-      console.error('❌ Sender profile not found');
+      AppLogger.error("❌ Sender profile not found");
       return;
     }
 
     // 2. Check if recipient has subscription ID
     const { data: toTokens } = await supabase
-      .from('push_tokens')
-      .select('tokens')
-      .eq('uid', toUserId)
+      .from("push_tokens")
+      .select("tokens")
+      .eq("uid", toUserId)
       .single();
 
-    console.log('📋 Recipient Push Tokens:', toTokens?.tokens);
+    AppLogger.debug("📋 Recipient Push Tokens:", toTokens?.tokens);
 
     if (!toTokens?.tokens || toTokens.tokens.length === 0) {
-      console.error('❌ Recipient does not have any push tokens');
+      AppLogger.error("❌ Recipient does not have any push tokens");
       return;
     }
 
@@ -43,13 +44,13 @@ export async function testPushNotifications(
       toUserId,
       fromProfile.name,
       fromProfile.profilePicture,
-      'test-conversation-id',
-      'https://example.com/test-audio.mp3',
-      'message'
+      "test-conversation-id",
+      "https://example.com/test-audio.mp3",
+      "message"
     );
 
-    console.log('✅ Test notification sent successfully');
+    AppLogger.debug("✅ Test notification sent successfully");
   } catch (error) {
-    console.error('❌ Test notification failed:', error);
+    AppLogger.error("❌ Test notification failed:", error);
   }
 }

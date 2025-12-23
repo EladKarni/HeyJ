@@ -8,7 +8,7 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 // Utilities & Providers
 import { useProfile } from "@utilities/ProfileProvider";
 import { useConversations } from "@utilities/ConversationsProvider";
-import { useFriends } from "@utilities/FriendsProvider";
+import { useFriends } from "../providers/FriendshipProvider";
 import { sendMessage } from "@utilities/SendMessage";
 import { supabase } from "@utilities/Supabase";
 import { logAgentEvent } from "@utilities/AgentLogger";
@@ -29,6 +29,7 @@ import ConversationsScreen from "./ConversationsScreen";
 // Types & Styles
 import { RootStackParamList } from "@app-types/navigation";
 import { createStyles as createHomeScreenStyles } from "@styles/screens/HomeScreen.styles";
+import AppLogger from "@/utilities/AppLogger";
 
 const HomeScreen = () => {
   logAgentEvent({
@@ -125,7 +126,8 @@ const HomeScreen = () => {
   });
 
   useEffect(() => {
-    if (profile && selectedConversation) {
+    // Only update from conversation if user hasn't manually selected a friend
+    if (profile && selectedConversation && !selectedFriendUid) {
       const conversation = conversations.find((c) => c.conversationId === selectedConversation);
       if (conversation) {
         const uid: string = conversation.uids.filter((id) => id !== profile?.uid)[0];
@@ -136,11 +138,11 @@ const HomeScreen = () => {
         setSelectedRecipientName("");
         setSelectedFriendUid(null);
       }
-    } else {
+    } else if (!selectedConversation) {
       setSelectedRecipientName("");
       setSelectedFriendUid(null);
     }
-  }, [profile, profiles, selectedConversation, conversations]);
+  }, [profile, profiles, selectedConversation, conversations, selectedFriendUid]);
 
   useEffect(() => {
     if (profile) {
@@ -226,7 +228,7 @@ const HomeScreen = () => {
       setSelectedRecipientName(friend.name);
       setSelectedFriendUid(friendUid);
     } catch (error) {
-      console.error("Error finding/creating conversation:", error);
+      AppLogger.error("Error finding/creating conversation:", { error: error instanceof Error ? error.message : String(error) });
       Alert.alert("Error", "Something went wrong. Please try again.");
     }
   };

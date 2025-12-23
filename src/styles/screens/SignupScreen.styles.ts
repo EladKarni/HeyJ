@@ -1,5 +1,11 @@
 import { StyleSheet, Dimensions } from "react-native";
-import { colors, spacing, typography, borderRadius, buttonHeight } from "../theme";
+import {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+  buttonHeight,
+} from "../theme";
 
 const { width } = Dimensions.get("window");
 
@@ -78,6 +84,7 @@ export const styles = StyleSheet.create({
     maxWidth: 400,
     height: buttonHeight,
     borderWidth: 1,
+    color: colors.text,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
@@ -94,6 +101,7 @@ export const styles = StyleSheet.create({
   passwordInput: {
     width: "100%",
     height: buttonHeight,
+    color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
@@ -188,4 +196,3 @@ export const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
