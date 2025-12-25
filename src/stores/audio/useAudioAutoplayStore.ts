@@ -70,9 +70,15 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
 
     validConversations.forEach((conversation) => {
       const lastCount = get().lastMessageCounts[conversation.conversationId];
+      // Get the other user's UID from the conversation
+      const otherUserUid = conversation.uids.find((uid) => uid !== profileId);
+      if (!otherUserUid) {
+        AppLogger.warn("Could not find other user UID in conversation", { conversationId: conversation.conversationId });
+        return;
+      }
       const unheardMessages = getUnreadMessagesFromOtherUser(
-        conversation.messages,
-        profileId
+        conversation,
+        otherUserUid
       );
       const currentCount = unheardMessages.length;
 
@@ -164,9 +170,11 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
     // Look for unread messages in current conversation first
     if (currentConversationIndex !== -1) {
       const currentConversation = conversations[currentConversationIndex];
+      const otherUserUid = currentConversation.uids.find((uid) => uid !== profileId);
+      if (!otherUserUid) return;
       const unheardMessages = getUnreadMessagesFromOtherUser(
-        currentConversation.messages,
-        profileId
+        currentConversation,
+        otherUserUid
       );
 
       if (unheardMessages.length > 0) {
@@ -186,9 +194,11 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
     // Look for unread messages in subsequent conversations
     for (let i = currentConversationIndex + 1; i < conversations.length; i++) {
       const conversation = conversations[i];
+      const otherUserUid = conversation.uids.find((uid) => uid !== profileId);
+      if (!otherUserUid) continue;
       const unheardMessages = getUnreadMessagesFromOtherUser(
-        conversation.messages,
-        profileId
+        conversation,
+        otherUserUid
       );
 
       if (unheardMessages.length > 0) {

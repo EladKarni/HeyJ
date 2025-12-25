@@ -126,8 +126,8 @@ const HomeScreen = () => {
   });
 
   useEffect(() => {
-    // Only update from conversation if user hasn't manually selected a friend
-    if (profile && selectedConversation && !selectedFriendUid) {
+    // Update recipient whenever a conversation is selected
+    if (profile && selectedConversation) {
       const conversation = conversations.find((c) => c.conversationId === selectedConversation);
       if (conversation) {
         const uid: string = conversation.uids.filter((id) => id !== profile?.uid)[0];
@@ -142,7 +142,7 @@ const HomeScreen = () => {
       setSelectedRecipientName("");
       setSelectedFriendUid(null);
     }
-  }, [profile, profiles, selectedConversation, conversations, selectedFriendUid]);
+  }, [profile, profiles, selectedConversation, conversations]);
 
   useEffect(() => {
     if (profile) {

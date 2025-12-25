@@ -103,10 +103,17 @@ const ConversationsScreen = () => {
       })
     });
 
-    // Re-enable autoplay with simplified logic to avoid filter error
-    if (conversations && conversations.length > 0 && autoplay) {
-      console.log("🎵 Autoplay would run here - conversations:", conversations.length);
-      // Only enable basic conversation loading, skip the problematic autoplay logic
+    // Re-enable autoplay
+    if (conversations && conversations.length > 0 && autoplay && audioPlayer && profile) {
+      AppLogger.debug("🎵 Calling handleAutoPlay with conversations:", conversations.length);
+      handleAutoPlay(
+        conversations,
+        autoplay,
+        profile.uid,
+        audioPlayer,
+        updateMessageReadStatus,
+        speakerMode
+      );
     }
   }, [
     conversations.map((c) => `${c.conversationId}:${c.messages.length}`).join(","),
