@@ -118,7 +118,7 @@ export const sendMessage = async (
       .getPublicUrl(uploadData.path).data.publicUrl;
     AppLogger.debug("✅ Public URL", { url });
 
-    const message = new Message(messageId, new Date(), profile.uid, url, false);
+    const message = new Message(messageId, new Date(), profile.uid, url, false, conversationId);
 
     AppLogger.debug("💾 Inserting message into database...");
     const { data: messageData, error: messageError } = await supabase
@@ -141,11 +141,28 @@ export const sendMessage = async (
       messages: updatedMessages,
     };
 
+    console.log("💾 Upserting conversation:", JSON.stringify({
+      conversationId: newConversation.conversationId,
+      uids: newConversation.uids,
+      uidsType: typeof newConversation.uids,
+      isArray: Array.isArray(newConversation.uids),
+      currentUserUid: profile.uid,
+      includesCurrentUser: newConversation.uids.includes(profile.uid),
+      fullData: newConversation
+    }, null, 2));
+
     const { data: conversationData, error: conversationError } = await supabase
       .from("conversations")
       .upsert(newConversation);
 
     if (conversationError) {
+      console.error("❌ Conversation upsert error details:", JSON.stringify({
+        error: conversationError,
+        message: conversationError.message,
+        details: conversationError.details,
+        hint: conversationError.hint,
+        code: conversationError.code
+      }, null, 2));
       handleError(conversationError, "SendMessage - conversation update", true, "We were unable to send your message. Please try again.");
       return;
     }

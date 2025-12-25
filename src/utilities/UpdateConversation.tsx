@@ -20,6 +20,7 @@ export const updateLastRead = async (
     ];
     const newConversation = {
       conversationId: conversation.conversationId,
+      uids: conversation.uids, // Include uids for RLS policy check
       lastRead: newLastRead,
     };
 

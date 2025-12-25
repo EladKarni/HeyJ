@@ -324,8 +324,9 @@ const RecordingPlayer = ({
 
         setPosition(currentTime * 1000);
 
-        // Check if finished
-        if (currentTime >= totalDuration && totalDuration > 0) {
+        // Check if finished - use a tolerance buffer to catch playback end reliably
+        // Some platforms may not reach exact duration, so check if within 200ms of end
+        if (totalDuration > 0 && currentTime >= totalDuration - 0.2) {
           audioPlayer.pause();
           audioPlayer.seekTo(0);
           setPosition(0); // Reset position state immediately
