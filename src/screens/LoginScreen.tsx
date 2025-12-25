@@ -9,10 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 
 // Components (for future OAuth implementation - currently commented out at line 121)
 import OAuthButton from "@components/auth/OAuthButton";
+import HeyJLogo from "@components/HeyJLogo";
 
 // Utilities
 import { signInWithEmail } from "@utilities/AuthHelper";
@@ -63,6 +65,9 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.content, { minHeight: '100%' }]}>
+          <View style={styles.logoContainer}>
+            <HeyJLogo width={120} height={120} />
+          </View>
           <Text style={styles.title}>Welcome to HeyJ</Text>
           <Text style={styles.subtitle}>Voice messaging made simple</Text>
 
@@ -98,9 +103,11 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
                 onPress={() => setShowPassword((prev) => !prev)}
                 accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
-                <Text style={{ color: '#007AFF', fontSize: 14 }}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
+                <Image
+                  source={showPassword ? require('@assets/hidden.png') : require('@assets/eye.png')}
+                  style={{ width: 24, height: 24, tintColor: '#c48b6eff' }}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </View>
 
