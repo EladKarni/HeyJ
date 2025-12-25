@@ -79,14 +79,6 @@ Deno.serve(async (req) => {
     const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
     const oneSignalRestApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
 
-    // Debug logging
-    console.log("🔍 Environment check:", {
-      hasAppId: !!oneSignalAppId,
-      hasApiKey: !!oneSignalRestApiKey,
-      appIdPrefix: oneSignalAppId?.substring(0, 8),
-      apiKeyPrefix: oneSignalRestApiKey?.substring(0, 15),
-    });
-
     if (!oneSignalAppId || !oneSignalRestApiKey) {
       console.error("❌ OneSignal credentials not configured");
       return new Response(
@@ -94,8 +86,6 @@ Deno.serve(async (req) => {
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    console.log("🔑 Using OneSignal credentials from environment");
 
     const notificationResponse = await fetch(
       "https://api.onesignal.com/notifications",
