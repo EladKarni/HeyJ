@@ -10,6 +10,7 @@ import { useCoreAudioPlaybackStore } from "../stores/audio/useCoreAudioPlaybackS
 interface NotificationData {
   conversationId?: string;
   messageUrl?: string;
+  messageId?: string;
 }
 
 export class NotificationAudioService {
@@ -35,7 +36,7 @@ export class NotificationAudioService {
           data.messageUrl,
           data.conversationId,
           audioPlayer || undefined,
-          undefined,
+          data.messageId,
           updateMessageReadStatus
         );
         updateLastRead(data.conversationId, profileId);
@@ -57,7 +58,7 @@ export class NotificationAudioService {
           data.messageUrl,
           data.conversationId,
           audioPlayer || undefined,
-          undefined,
+          data.messageId,
           updateMessageReadStatus
         );
         updateLastRead(data.conversationId, profileId);

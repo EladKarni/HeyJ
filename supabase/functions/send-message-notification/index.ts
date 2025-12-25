@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
           data: {
             conversationId: conversation.conversationId,
             messageUrl: newMessage.audioUrl,
+            messageId: newMessage.messageId,
             fromName: senderProfile.name,
             fromPhoto: senderProfile.profilePicture,
             notificationType: "message",
