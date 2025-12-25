@@ -41,8 +41,15 @@ export default class Conversation {
             .select()
             .eq("messageId", id);
 
-          if (messageData) {
+          if (error) {
+            console.error("Error fetching message:", error);
+            return;
+          }
+
+          if (messageData && messageData.length > 0) {
             messages.push(Message.fromJSON(messageData[0]));
+          } else {
+            console.warn(`Message not found: ${id}`);
           }
         } catch (error) {
           console.error("Error fetching message:", error);
