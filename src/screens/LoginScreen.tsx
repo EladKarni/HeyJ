@@ -10,6 +10,8 @@ import {
   Platform,
   ScrollView,
   Image,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 
 // Components (for future OAuth implementation - currently commented out at line 121)
@@ -57,22 +59,25 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { minHeight: '100%' }]}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContainer, { minHeight: '100%' }]}
+        contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { minHeight: '100%' }]}>
-          <View style={styles.logoContainer}>
-            <HeyJLogo width={120} height={120} />
-          </View>
-          <Text style={styles.title}>Welcome to HeyJ</Text>
-          <Text style={styles.subtitle}>Voice messaging made simple</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <HeyJLogo width={120} height={120} />
+            </View>
+            <Text style={styles.title}>Welcome to HeyJ</Text>
+            <Text style={styles.subtitle}>Voice messaging made simple</Text>
 
-          {/* Email/Password Section */}
-          <View style={styles.emailSection}>
+            {/* Email/Password Section */}
+            <View style={styles.emailSection}>
             <Text style={styles.sectionTitle}>Sign In</Text>
 
             <TextInput
@@ -131,18 +136,19 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
             </TouchableOpacity>
           </View>
 
-          {/* OAuth Section - commented out until social logins are setup */}
-          {false && (
-            <View style={styles.oauthSection}>
-              <Text style={styles.divider}>OR</Text>
-              <Text style={styles.sectionTitle}>Continue with</Text>
-              <View style={styles.oauthButtons}>
-                <OAuthButton type="google" />
-                <OAuthButton type="apple" />
+            {/* OAuth Section - commented out until social logins are setup */}
+            {false && (
+              <View style={styles.oauthSection}>
+                <Text style={styles.divider}>OR</Text>
+                <Text style={styles.sectionTitle}>Continue with</Text>
+                <View style={styles.oauthButtons}>
+                  <OAuthButton type="google" />
+                  <OAuthButton type="apple" />
+                </View>
               </View>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        </TouchableWithoutFeedback>
       </ScrollView>
     </KeyboardAvoidingView>
   );
