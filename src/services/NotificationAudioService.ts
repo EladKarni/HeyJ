@@ -15,7 +15,9 @@ interface NotificationData {
 export class NotificationAudioService {
   static initializeNotificationHandlers(
     setSelectedConversation: (id: string) => void,
-    profileId: string
+    profileId: string,
+    navigateToConversation?: (conversationId: string) => void,
+    updateMessageReadStatus?: (messageId: string) => void
   ): () => void {
     // Skip notification handlers on web platform
     if (Platform.OS === 'web') {
@@ -30,9 +32,11 @@ export class NotificationAudioService {
       if (data && data.conversationId && data.messageUrl) {
         setSelectedConversation(data.conversationId);
         useCoreAudioPlaybackStore.getState().playFromUri(
-          data.messageUrl, 
-          data.conversationId, 
-          audioPlayer || undefined
+          data.messageUrl,
+          data.conversationId,
+          audioPlayer || undefined,
+          undefined,
+          updateMessageReadStatus
         );
         updateLastRead(data.conversationId, profileId);
       }
@@ -43,10 +47,18 @@ export class NotificationAudioService {
 
       if (data && data.conversationId && data.messageUrl) {
         setSelectedConversation(data.conversationId);
+
+        // Navigate to the conversation screen when notification is clicked
+        if (navigateToConversation) {
+          navigateToConversation(data.conversationId);
+        }
+
         useCoreAudioPlaybackStore.getState().playFromUri(
-          data.messageUrl, 
-          data.conversationId, 
-          audioPlayer || undefined
+          data.messageUrl,
+          data.conversationId,
+          audioPlayer || undefined,
+          undefined,
+          updateMessageReadStatus
         );
         updateLastRead(data.conversationId, profileId);
       }

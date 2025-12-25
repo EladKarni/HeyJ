@@ -9,16 +9,19 @@ interface AutoplayState {
   conversations: Conversation[];
   profileId: string | undefined;
   lastMessageCounts: Record<string, number>;
+  updateMessageReadStatus: ((messageId: string) => void) | undefined;
 
   // Actions
   setConversations: (conversations: Conversation[]) => void;
   setProfileId: (profileId: string | undefined) => void;
+  setUpdateMessageReadStatus: (fn: (messageId: string) => void) => void;
   updateMessageCount: (conversationId: string, count: number) => void;
   handleAutoPlay: (
     conversations: Conversation[],
     autoplay: boolean,
     profileId: string | undefined,
-    audioPlayer: AudioPlayer
+    audioPlayer: AudioPlayer,
+    updateMessageReadStatus?: (messageId: string) => void
   ) => void;
   playNextUnreadMessage: () => void;
 }
@@ -27,10 +30,13 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
   conversations: [],
   profileId: undefined,
   lastMessageCounts: {},
+  updateMessageReadStatus: undefined,
 
   setConversations: (conversations) => set({ conversations }),
 
   setProfileId: (profileId) => set({ profileId }),
+
+  setUpdateMessageReadStatus: (fn) => set({ updateMessageReadStatus: fn }),
 
   updateMessageCount: (conversationId, count) =>
     set((state) => ({
@@ -40,7 +46,10 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
       },
     })),
 
-  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer) => {
+  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus) => {
+    if (updateMessageReadStatus) {
+      set({ updateMessageReadStatus });
+    }
     if (!profileId) return;
 
     // Defensive checks for conversations array
@@ -96,7 +105,7 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
       if (
         currentCount > (lastCount || 0) && // New messages
         autoplay && // Autoplay enabled
-        get().conversations.length > 0 // Not initial load (conversations already set)
+        !isInitialLoad // Not initial app load - only play on new messages, not on app refresh
       ) {
         // Newest message autoplay
         const newestUnheard = unheardMessages[unheardMessages.length - 1];
@@ -111,32 +120,13 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             newestUnheard.audioUrl,
             conversation.conversationId,
             audioPlayer!,
-            newestUnheard.messageId
+            newestUnheard.messageId,
+            get().updateMessageReadStatus
           );
-      } else if (lastCount === undefined || isInitialLoad) {
-        // First time seeing this conversation OR initial app load - autoplay OLDEST unread message
+      } else if (lastCount === undefined && !isInitialLoad) {
+        // First time seeing this conversation (not initial app load) - autoplay OLDEST unread message
         const oldestUnheard = unheardMessages[0];
-        AppLogger.debug("🔔 First load with unread message(s), autoplaying oldest:", {
-          messageId: oldestUnheard.messageId,
-          unreadCount: unheardMessages.length,
-          loadType: isInitialLoad ? "[INITIAL APP LOAD]" : "[NEW CONVERSATION]"
-        });
-        useCoreAudioPlaybackStore
-          .getState()
-          .playFromUri(
-            oldestUnheard.audioUrl,
-            conversation.conversationId,
-            audioPlayer,
-            oldestUnheard.messageId
-          );
-      } else if (
-        useCoreAudioPlaybackStore.getState().currentlyPlayingConversationId ===
-          null &&
-        lastCount !== undefined
-      ) {
-        // Autoplay was re-enabled and nothing is currently playing - start from oldest unread
-        const oldestUnheard = unheardMessages[0];
-        AppLogger.debug("🔔 Autoplay re-enabled, starting from oldest unread:", {
+        AppLogger.debug("🔔 First time seeing conversation with unread message(s), autoplaying oldest:", {
           messageId: oldestUnheard.messageId,
           unreadCount: unheardMessages.length
         });
@@ -146,7 +136,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             oldestUnheard.audioUrl,
             conversation.conversationId,
             audioPlayer,
-            oldestUnheard.messageId
+            oldestUnheard.messageId,
+            get().updateMessageReadStatus
           );
       }
 
@@ -185,7 +176,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             nextMessage.audioUrl,
             currentConversation.conversationId,
             useCoreAudioPlaybackStore.getState().audioPlayer!,
-            nextMessage.messageId
+            nextMessage.messageId,
+            get().updateMessageReadStatus
           );
         return;
       }
@@ -209,7 +201,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             nextMessage.audioUrl,
             conversation.conversationId,
             useCoreAudioPlaybackStore.getState().audioPlayer!,
-            nextMessage.messageId
+            nextMessage.messageId,
+            get().updateMessageReadStatus
           );
         return;
       }

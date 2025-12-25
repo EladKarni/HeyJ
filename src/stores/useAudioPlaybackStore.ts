@@ -45,7 +45,9 @@ interface AudioPlaybackState {
   initializeNotificationHandlers: (
     setSelectedConversation: (id: string) => void,
     profileId: string,
-    audioPlayer: AudioPlayer
+    audioPlayer: AudioPlayer,
+    navigateToConversation?: (conversationId: string) => void,
+    updateMessageReadStatus?: (messageId: string) => void
   ) => () => void;
 }
 
@@ -145,7 +147,7 @@ export const useAudioPlaybackStore = create<AudioPlaybackState>((set, get) => ({
   },
 
   // Notification actions - delegate to notification service
-  initializeNotificationHandlers: (setSelectedConversation, profileId, audioPlayer) => {
-    return NotificationAudioService.initializeNotificationHandlers(setSelectedConversation, profileId);
+  initializeNotificationHandlers: (setSelectedConversation, profileId, audioPlayer, navigateToConversation, updateMessageReadStatus) => {
+    return NotificationAudioService.initializeNotificationHandlers(setSelectedConversation, profileId, navigateToConversation, updateMessageReadStatus);
   },
 }));

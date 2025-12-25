@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { AudioPlayer, AudioPlayerStatus } from "@app-types/audio";
 import { playAudioFromUri } from "@services/audioService";
+import { markMessageAsRead } from "@utilities/MarkMessageAsRead";
 import AppLogger from "@/utilities/AppLogger";
 
 interface CoreAudioPlaybackState {
@@ -27,7 +28,8 @@ interface CoreAudioPlaybackState {
     uri: string,
     conversationId?: string,
     audioPlayer?: AudioPlayer,
-    messageId?: string
+    messageId?: string,
+    updateMessageReadStatus?: (messageId: string) => void
   ) => Promise<void>;
 }
 
@@ -81,7 +83,7 @@ export const useCoreAudioPlaybackStore = create<CoreAudioPlaybackState>(
 
     setAutoplayEnabled: (enabled) => set({ autoplayEnabled: enabled }),
 
-    playFromUri: async (uri, conversationId, audioPlayer, messageId) => {
+    playFromUri: async (uri, conversationId, audioPlayer, messageId, updateMessageReadStatus) => {
       try {
         const player = audioPlayer || get().audioPlayer;
         if (!player) {
@@ -95,6 +97,15 @@ export const useCoreAudioPlaybackStore = create<CoreAudioPlaybackState>(
           messageId || null,
           uri
         );
+
+        // Mark message as read immediately when playback starts
+        if (messageId) {
+          AppLogger.debug("📖 Marking message as read on playback start:", messageId);
+          const success = await markMessageAsRead(messageId);
+          if (success && updateMessageReadStatus) {
+            updateMessageReadStatus(messageId);
+          }
+        }
 
         // Play the audio
         await playAudioFromUri(uri, player);

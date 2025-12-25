@@ -131,10 +131,12 @@ const ConversationsScreen = () => {
     const cleanup = initializeNotificationHandlers(
       setSelectedConversation,
       profile.uid,
-      audioPlayer
+      audioPlayer,
+      (conversationId: string) => navigation.navigate("Conversation", { conversationId }),
+      updateMessageReadStatus
     );
     return cleanup;
-  }, [profile, setSelectedConversation, initializeNotificationHandlers, audioPlayer]);
+  }, [profile, setSelectedConversation, initializeNotificationHandlers, audioPlayer, navigation, updateMessageReadStatus]);
 
   return (
     <FlatList
