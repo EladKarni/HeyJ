@@ -3,6 +3,7 @@
 # Local only Files
 .opencode
 plans/
+.cursor/mcp.local.json
 
 # dependencies
 node_modules/
