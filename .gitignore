@@ -50,8 +50,8 @@ dist/
 web-build/
 
 # Native Code
-ios/
-android/
+./ios/
+./android/
 *.xcworkspace
 *.xcuserstate
 *.apk
