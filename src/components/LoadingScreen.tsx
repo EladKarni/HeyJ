@@ -33,9 +33,9 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ error, onRetry }) => {
   return (
     <View style={styles.container}>
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-        <HeyJLogo width={150} height={150} />
+        <HeyJLogo width={150} height={150} color="#ffffff" />
       </Animated.View>
-      
+
       {error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Something went wrong</Text>
@@ -49,7 +49,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ error, onRetry }) => {
       ) : (
         <ActivityIndicator
           size="large"
-          color="#fa7a3c"
+          color="#ffffff"
           style={styles.spinner}
         />
       )}
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fa7a3c',
   },
   spinner: {
     marginTop: 30,
@@ -75,24 +75,24 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333333',
+    color: '#ffffff',
     marginBottom: 8,
     textAlign: 'center',
   },
   errorSubtext: {
     fontSize: 14,
-    color: '#666666',
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#fa7a3c',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: '#fa7a3c',
     fontSize: 16,
     fontWeight: '600',
   },

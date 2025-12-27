@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#fa7a3c"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -36,7 +36,7 @@
       },
       "bundleIdentifier": "com.ekarni.heyj",
       "splash": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
       },
       "entitlements": {
@@ -59,7 +59,7 @@
       "package": "com.ekarni.heyj",
       "runtimeVersion": "1.0.0",
       "splash": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
       }
     },
