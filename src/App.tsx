@@ -64,18 +64,26 @@ function AppContent() {
     const initializeAuth = async () => {
       try {
         AppLogger.critical("Auth initialization started");
-        
+
         // Get initial session with timeout
         const { data: { session }, error } = await withTimeout(
           supabase.auth.getSession(),
           TIMEOUTS.AUTH_INIT,
           "Auth session check timed out"
         );
-        
+
         if (error) {
+          // Handle corrupted refresh token specifically
+          if (error.message?.includes('Refresh Token') || error.message?.includes('Invalid Refresh Token')) {
+            AppLogger.critical("Corrupted refresh token detected - clearing auth storage");
+            await supabase.auth.signOut();
+            setUser(null);
+            setLoadingUser(false);
+            return;
+          }
           throw error;
         }
-        
+
         setUser(session?.user ?? null);
         AppLogger.critical("Auth initialization completed", {
           hasUser: !!session?.user
@@ -85,7 +93,7 @@ function AppContent() {
         AppLogger.error("Failed to initialize auth", error instanceof Error ? error : new Error(errorMessage));
         AppLogger.critical("Auth initialization failed", { error: errorMessage });
         setAuthError(errorMessage);
-        
+
         // Graceful degradation - proceed as logged out
         setUser(null);
       } finally {
@@ -97,7 +105,6 @@ function AppContent() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null);
-        setLoadingUser(false);
       }
     );
 
@@ -118,7 +125,7 @@ function AppContent() {
         authListener.subscription.unsubscribe();
       }
     };
-  }, [loadingUser]);
+  }, []);
 
   const onLayoutRootView = useCallback(async () => {
     if (!loadingUser) {
