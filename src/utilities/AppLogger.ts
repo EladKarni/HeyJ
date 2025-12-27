@@ -51,6 +51,25 @@ class AppLogger {
   }
   
   /**
+   * Critical logging - ALWAYS logs (both dev and production)
+   */
+  static critical(message: string, data?: LogData): void {
+    const logData = {
+      timestamp: new Date().toISOString(),
+      ...data
+    };
+    
+    console.error(`🚨 CRITICAL: ${message}`, logData);
+    
+    // Store critical logs in AsyncStorage for production debugging
+    try {
+      this.storeCriticalLog(message, logData);
+    } catch (e) {
+      console.error('Failed to store critical log:', e);
+    }
+  }
+
+  /**
    * Error logging - development details + production monitoring
    */
   static error(message: string, error?: Error | LogData): void {
@@ -214,6 +233,76 @@ class AppLogger {
       console.debug('Security monitoring data:', securityLog);
     } catch (e) {
       console.error('Failed to send security event to monitoring:', e);
+    }
+  }
+
+  /**
+   * Store critical logs in AsyncStorage for production debugging
+   */
+  private static async storeCriticalLog(message: string, data: LogData): Promise<void> {
+    try {
+      // Note: This would require AsyncStorage import, but for now use localStorage for web
+      const storageKey = 'critical_logs';
+      const maxLogs = 50;
+      
+      let logs: any[] = [];
+      
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const existingLogs = localStorage.getItem(storageKey);
+        if (existingLogs) {
+          logs = JSON.parse(existingLogs);
+        }
+        
+        // Add new log
+        logs.push({
+          timestamp: new Date().toISOString(),
+          message,
+          data
+        });
+        
+        // Keep only last maxLogs
+        if (logs.length > maxLogs) {
+          logs = logs.slice(-maxLogs);
+        }
+        
+        localStorage.setItem(storageKey, JSON.stringify(logs));
+      }
+    } catch (e) {
+      console.error('Failed to store critical log:', e);
+    }
+  }
+
+  /**
+   * Retrieve stored critical logs
+   */
+  static async getCriticalLogs(): Promise<any[]> {
+    try {
+      const storageKey = 'critical_logs';
+      
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const logs = localStorage.getItem(storageKey);
+        return logs ? JSON.parse(logs) : [];
+      }
+      
+      return [];
+    } catch (e) {
+      console.error('Failed to retrieve critical logs:', e);
+      return [];
+    }
+  }
+
+  /**
+   * Clear stored critical logs
+   */
+  static async clearCriticalLogs(): Promise<void> {
+    try {
+      const storageKey = 'critical_logs';
+      
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(storageKey);
+      }
+    } catch (e) {
+      console.error('Failed to clear critical logs:', e);
     }
   }
   

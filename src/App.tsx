@@ -11,11 +11,14 @@ import { supabase } from "@utilities/Supabase";
 import { AppProviders } from "@utilities/AppProviders";
 import { AuthProviders } from "@utilities/AuthProviders";
 import { logAgentEvent } from "@utilities/AgentLogger";
+import { withTimeout, TIMEOUTS } from "@utilities/timeoutUtils";
+import AppLogger from "@utilities/AppLogger";
 
 // Components
 import AppNavigator from "@components/navigation/AppNavigator";
 import AuthNavigator from "@components/navigation/AuthNavigator";
 import LoadingScreen from "@components/LoadingScreen";
+import AppErrorBoundary from "@components/AppErrorBoundary";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -44,7 +47,7 @@ if (typeof ErrorUtils !== 'undefined') {
   });
 }
 
-export default function App() {
+function AppContent() {
   logAgentEvent({
     location: 'App.tsx:App',
     message: 'App component rendering',
@@ -55,8 +58,42 @@ export default function App() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [appReady, setAppReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        AppLogger.critical("Auth initialization started");
+        
+        // Get initial session with timeout
+        const { data: { session }, error } = await withTimeout(
+          supabase.auth.getSession(),
+          TIMEOUTS.AUTH_INIT,
+          "Auth session check timed out"
+        );
+        
+        if (error) {
+          throw error;
+        }
+        
+        setUser(session?.user ?? null);
+        AppLogger.critical("Auth initialization completed", {
+          hasUser: !!session?.user
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        AppLogger.error("Failed to initialize auth", error instanceof Error ? error : new Error(errorMessage));
+        AppLogger.critical("Auth initialization failed", { error: errorMessage });
+        setAuthError(errorMessage);
+        
+        // Graceful degradation - proceed as logged out
+        setUser(null);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    // Set up auth listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null);
@@ -64,10 +101,24 @@ export default function App() {
       }
     );
 
+    // Safety timeout - force proceed if auth takes too long
+    const safetyTimeout = setTimeout(() => {
+      if (loadingUser) {
+        AppLogger.critical("Auth safety timeout triggered - proceeding as logged out");
+        setUser(null);
+        setLoadingUser(false);
+      }
+    }, TIMEOUTS.AUTH_INIT);
+
+    initializeAuth();
+
     return () => {
-      authListener.subscription;
+      clearTimeout(safetyTimeout);
+      if (authListener?.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
-  }, []);
+  }, [loadingUser]);
 
   const onLayoutRootView = useCallback(async () => {
     if (!loadingUser) {
@@ -125,4 +176,12 @@ export default function App() {
       </AuthProviders>
     );
   }
+}
+
+export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
+  );
 }

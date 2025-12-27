@@ -1,37 +1,77 @@
 import * as SQLite from "expo-sqlite";
 import { DATABASE_NAME, DATABASE_VERSION, SCHEMA } from "./schema";
 import AppLogger from "@/utilities/AppLogger";
+import { withTimeout, TIMEOUTS } from "@/utilities/timeoutUtils";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
 export const initDatabase = async (): Promise<void> => {
+  const startTime = Date.now();
   try {
+    AppLogger.critical("Database initialization started");
+    
     if (db) {
       AppLogger.debug("📦 Database already initialized");
       return;
     }
 
-    db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+    db = await withTimeout(
+      SQLite.openDatabaseAsync(DATABASE_NAME),
+      TIMEOUTS.DATABASE_OPEN,
+      "Database open timed out"
+    );
     AppLogger.debug("📦 Database opened successfully");
 
-    // Create tables
-    await db.execAsync(SCHEMA.CONVERSATIONS);
-    await db.execAsync(SCHEMA.MESSAGES);
-    await db.execAsync(SCHEMA.PROFILES_CACHE);
-    await db.execAsync(SCHEMA.PENDING_MESSAGES);
-    await db.execAsync(SCHEMA.SYNC_METADATA);
+    // Create tables with timeouts
+    await withTimeout(
+      db.execAsync(SCHEMA.CONVERSATIONS),
+      TIMEOUTS.DATABASE_SCHEMA,
+      "Failed to create conversations table"
+    );
+    await withTimeout(
+      db.execAsync(SCHEMA.MESSAGES),
+      TIMEOUTS.DATABASE_SCHEMA,
+      "Failed to create messages table"
+    );
+    await withTimeout(
+      db.execAsync(SCHEMA.PROFILES_CACHE),
+      TIMEOUTS.DATABASE_SCHEMA,
+      "Failed to create profiles_cache table"
+    );
+    await withTimeout(
+      db.execAsync(SCHEMA.PENDING_MESSAGES),
+      TIMEOUTS.DATABASE_SCHEMA,
+      "Failed to create pending_messages table"
+    );
+    await withTimeout(
+      db.execAsync(SCHEMA.SYNC_METADATA),
+      TIMEOUTS.DATABASE_SCHEMA,
+      "Failed to create sync_metadata table"
+    );
 
-    // Create indexes
+    // Create indexes with timeouts
     for (const index of SCHEMA.INDEXES) {
-      await db.execAsync(index);
+      await withTimeout(
+        db.execAsync(index),
+        TIMEOUTS.DATABASE_SCHEMA,
+        "Failed to create database index"
+      );
     }
 
     AppLogger.debug("✅ Database schema created");
 
     // Set database version
     await setSyncMetadata("db_version", DATABASE_VERSION.toString());
+    
+    AppLogger.critical("Database initialization completed", {
+      duration: `${Date.now() - startTime}ms`
+    });
   } catch (error) {
-    AppLogger.error("❌ Error initializing database:", error);
+    AppLogger.error("❌ Error initializing database:", error instanceof Error ? error : new Error(String(error)));
+    AppLogger.critical("Database initialization failed", {
+      duration: `${Date.now() - startTime}ms`,
+      error: error instanceof Error ? error.message : String(error)
+    });
     throw error;
   }
 };

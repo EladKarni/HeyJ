@@ -1,8 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, ActivityIndicator, StyleSheet, Animated } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Animated, Text, TouchableOpacity } from 'react-native';
 import HeyJLogo from './HeyJLogo';
 
-const LoadingScreen: React.FC = () => {
+interface LoadingScreenProps {
+  error?: string | null;
+  onRetry?: () => void;
+}
+
+const LoadingScreen: React.FC<LoadingScreenProps> = ({ error, onRetry }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -30,11 +35,24 @@ const LoadingScreen: React.FC = () => {
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
         <HeyJLogo width={150} height={150} />
       </Animated.View>
-      <ActivityIndicator
-        size="large"
-        color="#fa7a3c"
-        style={styles.spinner}
-      />
+      
+      {error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Something went wrong</Text>
+          <Text style={styles.errorSubtext}>{error}</Text>
+          {onRetry && (
+            <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <ActivityIndicator
+          size="large"
+          color="#fa7a3c"
+          style={styles.spinner}
+        />
+      )}
     </View>
   );
 };
@@ -48,6 +66,35 @@ const styles = StyleSheet.create({
   },
   spinner: {
     marginTop: 30,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#fa7a3c',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
