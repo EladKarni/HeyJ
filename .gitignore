@@ -51,7 +51,7 @@ web-build/
 
 # Native Code
 ./ios/
-./android/
+android/
 *.xcworkspace
 *.xcuserstate
 *.apk
