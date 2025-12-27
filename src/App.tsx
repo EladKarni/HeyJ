@@ -1,6 +1,7 @@
 // React
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { View, Text } from "react-native";
+import * as SplashScreen from 'expo-splash-screen';
 
 // Third-party libraries
 import { User } from "@supabase/supabase-js";
@@ -14,6 +15,10 @@ import { logAgentEvent } from "@utilities/AgentLogger";
 // Components
 import AppNavigator from "@components/navigation/AppNavigator";
 import AuthNavigator from "@components/navigation/AuthNavigator";
+import LoadingScreen from "@components/LoadingScreen";
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 
 global.Buffer = require("buffer").Buffer;
@@ -49,10 +54,11 @@ export default function App() {
 
   const [loadingUser, setLoadingUser] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         setUser(session?.user ?? null);
         setLoadingUser(false);
       }
@@ -63,14 +69,27 @@ export default function App() {
     };
   }, []);
 
-  if (loadingUser) {
+  const onLayoutRootView = useCallback(async () => {
+    if (!loadingUser) {
+      await SplashScreen.hideAsync();
+      setAppReady(true);
+    }
+  }, [loadingUser]);
+
+  useEffect(() => {
+    if (!loadingUser) {
+      onLayoutRootView();
+    }
+  }, [loadingUser, onLayoutRootView]);
+
+  if (loadingUser || !appReady) {
     logAgentEvent({
       location: 'App.tsx:loading',
       message: 'App loading user',
       data: {},
       hypothesisId: 'E',
     });
-    return <View />;
+    return <LoadingScreen />;
   }
 
   if (user) {
