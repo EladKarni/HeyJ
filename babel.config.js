@@ -18,6 +18,7 @@ module.exports = function(api) {
             '@services': './src/services',
             '@styles': './src/styles',
             '@app-types': './src/types',
+            '@database': './src/database',
             '@assets': './assets',
             '@tests': './tests',
           },

@@ -26,41 +26,41 @@ export const colors = {
   primaryLight: sweetSalmon, // "#EB9B88"
   primaryDark: "#C85A3A", // Darker burnt peach
   primaryDisabled: "#8B4A35", // Even darker for disabled state
-  
+
   // Background colors - using dark warm tones for dark mode
   background: darkBackground, // "#1a1410" - very dark warm brown
   backgroundSecondary: darkSecondary, // "#2a1f18" - dark warm brown
   backgroundTertiary: darkTertiary, // "#3a2a20" - medium dark warm brown
-  
+
   // Text colors - using light palette colors for dark mode
   text: darkText, // "#FEF1E8" - seashell (lightest)
   textSecondary: darkTextSecondary, // "#F7C8B8" - almond silk
   textTertiary: darkTextTertiary, // "#EB9B88" - sweet salmon
-  
+  textPlaceholder: darkTextTertiary, // Medium light warm brown
   // Border colors - using medium tones from palette
   border: "#5a4a40", // Medium dark warm brown
   borderLight: "#4a3a30", // Darker warm brown
   borderDark: sweetSalmon, // "#EB9B88" - sweet salmon for emphasis
-  
+
   // Accent colors - using palette colors
   link: azureMist, // "#D8E7E6" - azure mist for links
   success: "#4A9BA8", // Darker azure mist for better contrast on dark backgrounds
   error: burntPeach, // "#F27A58" - burnt peach for errors
   warning: sweetSalmon, // "#EB9B88" - sweet salmon for warnings
   info: azureMist, // "#D8E7E6" - azure mist for info
-  
+
   // Neutral colors - adapted for dark mode
   white: seashell, // "#FEF1E8" - seashell for light elements
   black: darkBackground, // "#1a1410" - darkest for backgrounds
   gray: "#6a5a50", // Medium warm gray
   lightGray: almondSilk, // "#F7C8B8" - almond silk
   darkGray: "#4a3a30", // Dark warm gray
-  
+
   // Additional accent colors
   accent: burntPeach, // "#F27A58" - burnt peach
   accentLight: sweetSalmon, // "#EB9B88" - sweet salmon
   accentDark: "#C85A3A", // Darker burnt peach
-  
+
   // Legacy color mappings for compatibility
   yellow: almondSilk, // "#F7C8B8" - almond silk
   lightBlue: azureMist, // "#D8E7E6" - azure mist
@@ -111,4 +111,3 @@ export const borderRadius = {
 };
 
 export const buttonHeight = 50;
-

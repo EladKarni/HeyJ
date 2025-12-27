@@ -15,6 +15,7 @@ import RecordingPlayerHeader from "./RecordingPlayerHeader";
 import RecordingPlayerControls from "./RecordingPlayerControls";
 import PlayingIndicator from "./PlayingIndicator";
 import { styles } from "@styles/components/chat/RecordingPlayer.styles";
+import AppLogger from "@/utilities/AppLogger";
 
 const RecordingPlayer = ({
   uri,
@@ -68,12 +69,12 @@ const RecordingPlayer = ({
     // Only mark as read if recipient is playing (not the sender) and this is the current message
     // Double-check that we're actually playing this specific message
     if (!hasMarkedAsRead.current && currentUserUid !== senderUid && currentUri === uri && playerStatus.playing) {
-      console.log("📖 Marking message as read:", messageId, "URI:", uri, "Playing:", playerStatus.playing);
+      AppLogger.debug("📖 Marking message as read:", messageId, "URI:", uri, "Playing:", playerStatus.playing);
       markMessageAsRead(messageId);
       hasMarkedAsRead.current = true;
       setLocalIsRead(true);
     } else {
-      console.log("⚠️ Not marking as read:", {
+      AppLogger.debug("⚠️ Not marking as read:", {
         hasMarkedAsRead: hasMarkedAsRead.current,
         isRecipient: currentUserUid !== senderUid,
         isCurrentMessage: currentUri === uri,
@@ -86,7 +87,7 @@ const RecordingPlayer = ({
   const toggleReadStatus = async () => {
     const currentDisplayIsRead = hasToggledRead.current ? localIsRead : (isRead || false);
 
-    console.log("🔘 toggleReadStatus called", {
+    AppLogger.debug("🔘 toggleReadStatus called", {
       currentUserUid,
       senderUid,
       messageId,
@@ -99,12 +100,12 @@ const RecordingPlayer = ({
 
     if (currentUserUid === senderUid) {
       // Can't toggle read status for your own messages
-      console.log("❌ Cannot toggle - this is your own message");
+      AppLogger.debug("❌ Cannot toggle - this is your own message");
       return;
     }
 
     const newReadStatus = !currentDisplayIsRead;
-    console.log("✅ Toggling read status from", currentDisplayIsRead, "to", newReadStatus);
+    AppLogger.debug("✅ Toggling read status from", currentDisplayIsRead, "to", newReadStatus);
     hasToggledRead.current = true;
     setLocalIsRead(newReadStatus);
 
@@ -116,15 +117,15 @@ const RecordingPlayer = ({
         .eq("messageId", messageId);
 
       if (error) {
-        console.error("Error toggling message read status:", error);
+        AppLogger.error("Error toggling message read status:", error);
         // Revert on error
         hasToggledRead.current = false;
         setLocalIsRead(!newReadStatus);
       } else {
-        console.log("✅ Successfully updated read status in database");
+        AppLogger.debug("✅ Successfully updated read status in database");
       }
     } catch (error) {
-      console.error("Error toggling message read status:", error);
+      AppLogger.error("Error toggling message read status:", error);
       // Revert on error
       hasToggledRead.current = false;
       setLocalIsRead(!newReadStatus);
@@ -140,18 +141,18 @@ const RecordingPlayer = ({
         const duration = playerStatus.duration || 0;
         const positionMs = position || 0;
         const durationMs = duration * 1000 || 0;
-        
+
         const isAtEndByTime = duration > 0 && currentTime >= duration - 0.1;
         const isAtEndByPosition = durationMs > 0 && positionMs >= durationMs - 100;
         const isAtEnd = isAtEndByTime || isAtEndByPosition;
-        
+
         if (isAtEnd) {
-          console.log("🔄 Resetting playback position to beginning before replay (loadAudio)");
+          AppLogger.debug("🔄 Resetting playback position to beginning before replay (loadAudio)");
           audioPlayer.seekTo(0);
           setPosition(0);
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
+
         audioPlayer.play();
         // Note: Marking as read is now handled by the useEffect that watches playerStatus.playing
       }
@@ -186,7 +187,7 @@ const RecordingPlayer = ({
       }
 
       setIsReady(true);
-      console.log("✅ Audio player ready, duration:", playerStatus.duration);
+      AppLogger.debug("✅ Audio player ready, duration:", playerStatus.duration);
 
       // If we should play after loading, do it now
       if (shouldPlay && currentUri === uri) {
@@ -198,7 +199,7 @@ const RecordingPlayer = ({
               allowsRecording: false,
             });
           } catch (error) {
-            console.error("Error setting audio mode for playback:", error);
+            AppLogger.error("Error setting audio mode for playback:", error);
           }
         }
         // Set audio volume based on speaker mode before playing
@@ -207,7 +208,7 @@ const RecordingPlayer = ({
         // Note: Marking as read is now handled by the useEffect that watches playerStatus.playing
       }
     } catch (error) {
-      console.error("Error loading audio:", error);
+      AppLogger.error("Error loading audio:", error);
       setIsReady(false);
     } finally {
       setIsLoading(false);
@@ -221,7 +222,7 @@ const RecordingPlayer = ({
         playsInSilentMode: true,
         allowsRecording: false, // We're playing, not recording
       }).catch((error) => {
-        console.error("Error setting audio mode:", error);
+        AppLogger.error("Error setting audio mode:", error);
       });
     }
   }, []);
@@ -268,12 +269,12 @@ const RecordingPlayer = ({
       if (isReady && file) {
         // Audio is already loaded, play immediately
         hasAutoPlayed.current = true;
-        console.log("🎯 Autoplay: Starting playback (will mark as read when playing):", messageId);
+        AppLogger.debug("🎯 Autoplay: Starting playback (will mark as read when playing):", messageId);
         audioPlayer.play();
       } else if (!isLoading && !file) {
         // Audio needs to be loaded first, then play
         hasAutoPlayed.current = true;
-        console.log("🎯 Autoplay: Starting playback (will mark as read when playing):", messageId);
+        AppLogger.debug("🎯 Autoplay: Starting playback (will mark as read when playing):", messageId);
         loadAudio(true); // Pass true to play after loading
       }
     }
@@ -302,7 +303,7 @@ const RecordingPlayer = ({
       isReady &&
       file
     ) {
-      console.log("🎵 Audio playing - marking as read:", messageId);
+      AppLogger.debug("🎵 Audio playing - marking as read:", messageId);
       handlePlayStart();
     }
   }, [playerStatus.playing, currentUri, uri, currentUserUid, senderUid, isReady, file, messageId]);
@@ -323,8 +324,9 @@ const RecordingPlayer = ({
 
         setPosition(currentTime * 1000);
 
-        // Check if finished
-        if (currentTime >= totalDuration && totalDuration > 0) {
+        // Check if finished - use a tolerance buffer to catch playback end reliably
+        // Some platforms may not reach exact duration, so check if within 200ms of end
+        if (totalDuration > 0 && currentTime >= totalDuration - 0.2) {
           audioPlayer.pause();
           audioPlayer.seekTo(0);
           setPosition(0); // Reset position state immediately
@@ -356,10 +358,10 @@ const RecordingPlayer = ({
           allowsRecording: false, // We're playing, not recording
         });
       } catch (error) {
-        console.error("Error setting audio mode for playback:", error);
+        AppLogger.error("Error setting audio mode for playback:", error);
       }
     }
-    
+
     // Set audio volume based on speaker mode
     setAudioVolume(audioPlayer, speakerMode);
 
@@ -380,7 +382,7 @@ const RecordingPlayer = ({
         try {
           audioPlayer.play();
         } catch (error) {
-          console.error("Error playing audio when switching:", error);
+          AppLogger.error("Error playing audio when switching:", error);
         }
         // Note: Marking as read is now handled by the useEffect that watches playerStatus.playing
         return;
@@ -410,25 +412,25 @@ const RecordingPlayer = ({
           const duration = playerStatus.duration || 0;
           const positionMs = position || 0;
           const durationMs = duration * 1000 || 0;
-          
+
           // Check both playerStatus and our tracked position state
           const isAtEndByTime = duration > 0 && currentTime >= duration - 0.1;
           const isAtEndByPosition = durationMs > 0 && positionMs >= durationMs - 100;
           const isAtEnd = isAtEndByTime || isAtEndByPosition;
-          
+
           if (isAtEnd) {
             // Seek to beginning before playing
-            console.log("🔄 Resetting playback position to beginning before replay");
+            AppLogger.debug("🔄 Resetting playback position to beginning before replay");
             audioPlayer.seekTo(0);
             setPosition(0); // Also reset our position state
             // Small delay to ensure seek completes before playing
             await new Promise(resolve => setTimeout(resolve, 100));
           }
-          
+
           audioPlayer.play();
           // Note: Marking as read is now handled by the useEffect that watches playerStatus.playing
         } catch (error) {
-          console.error("Error playing audio:", error);
+          AppLogger.error("Error playing audio:", error);
         }
       }
     }

@@ -14,10 +14,13 @@
       "@services/*": ["./src/services/*"],
       "@styles/*": ["./src/styles/*"],
       "@app-types/*": ["./src/types/*"],
+      "@database/*": ["./src/database/*"],
       "@assets/*": ["./assets/*"],
       "@tests/*": ["./tests/*"],
       "react-native-onesignal": ["./tests/mocks/react-native-onesignal.d.ts"],
-      "rn-qr-generator": ["./tests/mocks/rn-qr-generator.d.ts"]
+      "rn-qr-generator": ["./tests/mocks/rn-qr-generator.d.ts"],
+      "react-native-shared-element": ["./tests/mocks/react-native-shared-element.d.ts"]
     }
-  }
+  },
+  "exclude": ["supabase"]
 }

@@ -8,6 +8,7 @@ import {
   RecordingPresets,
 } from "expo-audio";
 import { useAudioRecordingStore } from "@stores/useAudioRecordingStore";
+import AppLogger from "@/utilities/AppLogger";
 const getRecordingStore = () => useAudioRecordingStore.getState();
 
 interface UseAudioRecordingOptions {
@@ -21,7 +22,7 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
-  
+
   // Use Zustand store for state management
   const {
     isRecording,
@@ -50,7 +51,9 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
   // Request permissions and set up audio mode
   const requestPermissions = async () => {
     const response = await AudioModule.requestRecordingPermissionsAsync();
-    setRecordingAllowed(response.status as "granted" | "denied" | "undetermined");
+    setRecordingAllowed(
+      response.status as "granted" | "denied" | "undetermined"
+    );
 
     if (response.granted) {
       try {
@@ -59,7 +62,7 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
           allowsRecording: true,
         });
       } catch (error) {
-        console.error("Error setting audio mode:", error);
+        AppLogger.error("Error setting audio mode:", error);
       }
     }
   };
@@ -119,12 +122,12 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
     }
 
     if (recorderState.isRecording) {
-      console.log("⚠️ Already recording, skipping start");
+      AppLogger.debug("⚠️ Already recording, skipping start");
       return;
     }
 
     if (isProcessingRecording.current) {
-      console.log("⚠️ Currently processing a recording, skipping start");
+      AppLogger.debug("⚠️ Currently processing a recording, skipping start");
       return;
     }
 
@@ -143,14 +146,14 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
         // Add a small delay to ensure audio mode takes effect on iOS
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
-        console.error("Error setting audio mode for recording:", error);
+        AppLogger.error("Error setting audio mode for recording:", error);
       }
 
-      console.log("🎤 Preparing to record...");
+      AppLogger.debug("🎤 Preparing to record...");
       await audioRecorder.prepareToRecordAsync();
-      console.log("🎤 Starting recording...");
+      AppLogger.debug("🎤 Starting recording...");
       await audioRecorder.record();
-      console.log("✅ Recording started");
+      AppLogger.debug("✅ Recording started");
       setIsRecording(true);
 
       // Animate button to recording state
@@ -183,20 +186,20 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
 
       parallelAnimation.start();
     } catch (error) {
-      console.error("❌ Error starting recording:", error);
+      AppLogger.error("❌ Error starting recording:", error);
     }
   };
 
   const stopRecording = async () => {
     // If already processing, don't process again
     if (isProcessingRecording.current) {
-      console.log("⚠️ Already processing a recording, skipping");
+      AppLogger.debug("⚠️ Already processing a recording, skipping");
       return;
     }
 
     // Check if we're actually recording using the recorder state
     if (!recorderState.isRecording) {
-      console.log("⚠️ Not recording according to recorderState, aborting");
+      AppLogger.debug("⚠️ Not recording according to recorderState, aborting");
       return;
     }
 
@@ -204,18 +207,18 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
     isProcessingRecording.current = true;
 
     try {
-      console.log("🛑 Stopping recording...");
+      AppLogger.debug("🛑 Stopping recording...");
       await audioRecorder.stop();
-      console.log("✅ Recording stopped");
+      AppLogger.debug("✅ Recording stopped");
 
       const uri = audioRecorder.uri;
-      console.log("📁 Recording URI:", uri);
+      AppLogger.debug("📁 Recording URI:", uri);
 
       if (uri && onStopRecording) {
         await onStopRecording(uri);
       }
     } catch (error) {
-      console.error("❌ Error stopping recording:", error);
+      AppLogger.error("❌ Error stopping recording:", error);
     } finally {
       // Reset processing flag
       isProcessingRecording.current = false;
@@ -270,4 +273,3 @@ export const useAudioRecording = (options: UseAudioRecordingOptions = {}) => {
     requestPermissions,
   };
 };
-

@@ -2,18 +2,23 @@ import { create } from "zustand";
 import { Alert } from "react-native";
 import FriendRequest from "@objects/FriendRequest";
 import Profile from "@objects/Profile";
+import AppLogger from "@/utilities/AppLogger";
 
 interface FriendRequestActionsState {
   handleAccept: (
     request: FriendRequest,
     requesterProfile: Profile,
-    acceptFriendRequest: (id: string) => Promise<{ success: boolean; error?: string }>,
+    acceptFriendRequest: (
+      id: string
+    ) => Promise<{ success: boolean; error?: string }>,
     getFriendRequests: () => Promise<void>,
     getFriends: () => Promise<void>
   ) => Promise<void>;
   handleDecline: (
     requestId: string,
-    rejectFriendRequest: (id: string) => Promise<{ success: boolean; error?: string }>,
+    rejectFriendRequest: (
+      id: string
+    ) => Promise<{ success: boolean; error?: string }>,
     getFriendRequests: () => Promise<void>
   ) => Promise<void>;
 }
@@ -31,7 +36,10 @@ export const useFriendRequestActionsStore = create<FriendRequestActionsState>(
         // Accept the friend request
         const result = await acceptFriendRequest(request.id);
         if (!result.success) {
-          Alert.alert("Error", result.error || "Failed to accept friend request");
+          Alert.alert(
+            "Error",
+            result.error || "Failed to accept friend request"
+          );
           return;
         }
 
@@ -42,19 +50,25 @@ export const useFriendRequestActionsStore = create<FriendRequestActionsState>(
         // Refresh friends list
         await getFriends();
       } catch (error) {
-        console.error("Error accepting friend request:", error);
+        AppLogger.error("Error accepting friend request:", error);
         Alert.alert("Error", "Something went wrong. Please try again.");
       }
     },
 
-    handleDecline: async (requestId, rejectFriendRequest, getFriendRequests) => {
+    handleDecline: async (
+      requestId,
+      rejectFriendRequest,
+      getFriendRequests
+    ) => {
       const result = await rejectFriendRequest(requestId);
       if (result.success) {
         await getFriendRequests();
       } else {
-        Alert.alert("Error", result.error || "Failed to decline friend request");
+        Alert.alert(
+          "Error",
+          result.error || "Failed to decline friend request"
+        );
       }
     },
   })
 );
-

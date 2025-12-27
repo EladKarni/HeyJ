@@ -24,11 +24,14 @@ export const loadAudioFile = async (
         const filePath = cacheDir + (fileName || `${UUID.v4()}.mp4`);
         console.log("📥 Loading audio from:", uri);
         const downloadResumable = createDownloadResumable(uri, filePath, { cache: true });
-        const newFile = await downloadResumable.downloadAsync();
-        if (newFile) {
-          console.log("✅ Audio file downloaded:", newFile.uri);
-          return newFile.uri;
-        }
+const newFile = await downloadResumable.downloadAsync();
+      if (newFile && newFile.uri) {
+        console.log("✅ Audio file downloaded:", newFile.uri);
+        return newFile.uri;
+      } else {
+        console.error("Error loading audio: Download failed or no file returned");
+        return null;
+      }
       }
       // Fallback: return the remote URI directly for web
       console.log("📥 Using remote URI for web:", uri);
@@ -113,11 +116,9 @@ export const playAudioFromUri = async (
       return;
     }
 
-    const downloadResumable = createDownloadResumable(
-      uri,
-      docDir + "notification.mp4",
-      {}
-    );
+    const filePath = docDir + (conversationId ? `${conversationId}-${UUID.v4()}.mp4` : `${UUID.v4()}.mp4`);
+    console.log("📥 Downloading audio to:", filePath);
+    const downloadResumable = createDownloadResumable(uri, filePath);
 
     const newFile = await downloadResumable.downloadAsync();
     if (newFile) {

@@ -1,7 +1,8 @@
 import { supabase } from "./Supabase";
+import AppLogger from "@/utilities/AppLogger";
 
 export const markMessageAsRead = async (messageId: string) => {
-  console.log("💾 markMessageAsRead START:", messageId);
+  AppLogger.debug("💾 markMessageAsRead START:", messageId);
   try {
     const { error } = await supabase
       .from("messages")
@@ -9,14 +10,14 @@ export const markMessageAsRead = async (messageId: string) => {
       .eq("messageId", messageId);
 
     if (error) {
-      console.error("❌ Error marking message as read:", error);
+      AppLogger.error("❌ Error marking message as read:", error);
       return false;
     } else {
-      console.log("✅ markMessageAsRead SUCCESS:", messageId);
+      AppLogger.debug("✅ markMessageAsRead SUCCESS:", messageId);
       return true;
     }
   } catch (error) {
-    console.error("❌ Exception marking message as read:", error);
+    AppLogger.error("❌ Exception marking message as read:", error);
     return false;
   }
 };

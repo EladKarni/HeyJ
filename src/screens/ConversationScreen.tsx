@@ -1,6 +1,6 @@
 // React
 import React, { useEffect, useRef } from "react";
-import { View, Text, FlatList } from "react-native";
+import { View, Text, FlatList, Platform } from "react-native";
 
 // Navigation
 import { useNavigation, NavigationProp } from "@react-navigation/native";
@@ -192,6 +192,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         keyExtractor={(item) => item.title}
         renderItem={({ item }) => renderSection(item)}
         contentContainerStyle={styles.listContainer}
+        style={Platform.OS === "web" ? { flex: 1 } : undefined}
         contentInsetAdjustmentBehavior="automatic"
         onScroll={(event) => {
           // Track if user is near the bottom (within 100px)

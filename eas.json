@@ -35,7 +35,8 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "environment": "production"
     },
     "simulator": {
       "distribution": "internal",

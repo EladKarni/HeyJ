@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { colors } from "../../theme";
 
 export const createStyles = (windowWidth: number) =>
@@ -17,7 +17,7 @@ export const createStyles = (windowWidth: number) =>
       shadowOpacity: 0.3,
       shadowOffset: { width: 2, height: 4 },
       shadowRadius: 6,
-      position: "absolute",
+      position: (Platform.OS === "web" ? "fixed" : "absolute") as any,
       bottom: 1,
       left: 0,
       right: 0,

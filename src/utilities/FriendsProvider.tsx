@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "./Supabase";
 import FriendRequest from "@objects/FriendRequest";
 import Profile from "@objects/Profile";
 import { useProfile } from "./ProfileProvider";
 import { logAgentEvent } from "./AgentLogger";
-import { sendPushNotification } from "./Onesignal";
+import { FriendRequestService } from "../services/friendship/FriendRequestService";
+import { FriendshipService } from "../services/friendship/FriendshipService";
+
 
 interface FriendsContextType {
   friendRequests: FriendRequest[];
@@ -28,6 +29,7 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     data: {},
     hypothesisId: 'A',
   });
+
   let profile;
   try {
     const profileContext = useProfile();
@@ -50,6 +52,7 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     });
     throw error;
   }
+
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<Profile[]>([]);
 
@@ -60,26 +63,18 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { data, error } = await supabase
-        .from("friendships")
-        .select("*")
-        .or(`requester_id.eq.${profile.uid},addressee_id.eq.${profile.uid}`)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching friend requests:", error);
-        setFriendRequests([]);
-        return;
-      }
-
-      if (data) {
-        const requests = data.map((r) => FriendRequest.fromJSON(r));
-        setFriendRequests(requests);
-      } else {
-        setFriendRequests([]);
-      }
+      const requests = await FriendRequestService.fetchFriendRequests(profile.uid);
+      setFriendRequests(requests);
     } catch (error) {
-      console.error("Error fetching friend requests:", error);
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:getFriendRequests',
+        message: 'Error fetching friend requests',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
       setFriendRequests([]);
     }
   };
@@ -91,48 +86,18 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      // Get accepted friendships where user is either requester or addressee
-      const { data, error } = await supabase
-        .from("friendships")
-        .select("*")
-        .eq("status", "accepted")
-        .or(`requester_id.eq.${profile.uid},addressee_id.eq.${profile.uid}`);
-
-      if (error) {
-        console.error("Error fetching friends:", error);
-        setFriends([]);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        // Get the other user's UID for each friendship
-        const friendUids = data.map((f) =>
-          f.requester_id === profile.uid ? f.addressee_id : f.requester_id
-        );
-
-        // Fetch profiles for all friend UIDs
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
-          .select("*")
-          .in("uid", friendUids);
-
-        if (profilesError) {
-          console.error("Error fetching friend profiles:", profilesError);
-          setFriends([]);
-          return;
-        }
-
-        if (profilesData) {
-          const friendProfiles = profilesData.map((p) => Profile.fromJSON(p));
-          setFriends(friendProfiles);
-        } else {
-          setFriends([]);
-        }
-      } else {
-        setFriends([]);
-      }
+      const friendProfiles = await FriendRequestService.fetchFriends(profile.uid);
+      setFriends(friendProfiles);
     } catch (error) {
-      console.error("Error fetching friends:", error);
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:getFriends',
+        message: 'Error fetching friends',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
       setFriends([]);
     }
   };
@@ -145,135 +110,22 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      // Find user by userCode
-      const trimmedCode = userCode.trim().toLowerCase();
-      const { data: allProfiles, error: fetchError } = await supabase
-        .from("profiles")
-        .select("uid,userCode,name");
-
-      if (fetchError) {
-        return { success: false, error: "Failed to search for user" };
+      const result = await FriendshipService.sendFriendRequest(userCode, profile);
+      if (result.success) {
+        await getFriendRequests();
       }
-
-      const foundUser = allProfiles?.find(
-        (p) => p.userCode?.trim().toLowerCase() === trimmedCode
-      );
-
-      if (!foundUser) {
-        return { success: false, error: "User not found" };
-      }
-
-      if (foundUser.uid === profile.uid) {
-        return { success: false, error: "You cannot add yourself as a friend" };
-      }
-
-      // Check if already blocked (user blocked them, or they blocked user)
-      const { data: existingBlocks, error: blockCheckError } = await supabase
-        .from("friendships")
-        .select("*")
-        .eq("status", "blocked")
-        .or(
-          `and(requester_id.eq.${foundUser.uid},addressee_id.eq.${profile.uid}),and(requester_id.eq.${profile.uid},addressee_id.eq.${foundUser.uid})`
-        );
-
-      if (existingBlocks && existingBlocks.length > 0) {
-        // Check if the other user blocked us (they are requester and we are addressee)
-        const theyBlockedUs = existingBlocks.some(
-          (block) =>
-            block.requester_id === foundUser.uid &&
-            block.addressee_id === profile.uid
-        );
-        if (theyBlockedUs) {
-          return {
-            success: false,
-            error: "You cannot send a friend request to this user",
-          };
-        }
-      }
-
-      // Check if request already exists
-      const { data: existingRequests, error: requestCheckError } =
-        await supabase
-          .from("friendships")
-          .select("*")
-          .or(
-            `and(requester_id.eq.${profile.uid},addressee_id.eq.${foundUser.uid}),and(requester_id.eq.${foundUser.uid},addressee_id.eq.${profile.uid})`
-          )
-          .limit(1);
-
-      if (existingRequests && existingRequests.length > 0) {
-        const existingRequest = existingRequests[0];
-        if (existingRequest.status === "accepted") {
-          return { success: false, error: "You are already friends" };
-        }
-        if (existingRequest.status === "pending") {
-          return {
-            success: false,
-            error: "Friend request already sent or received",
-          };
-        }
-        // If rejected, update to pending
-        if (existingRequest.status === "rejected") {
-          const { error: updateError } = await supabase
-            .from("friendships")
-            .update({
-              status: "pending",
-              requester_id: profile.uid,
-              addressee_id: foundUser.uid,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingRequest.id);
-
-          if (updateError) {
-            return { success: false, error: "Failed to send friend request" };
-          }
-
-          await getFriendRequests();
-          return { success: true };
-        }
-      }
-
-      // Create new friend request
-      const { error: insertError } = await supabase
-        .from("friendships")
-        .insert({
-          requester_id: profile.uid,
-          addressee_id: foundUser.uid,
-          status: "pending",
-        });
-
-      if (insertError) {
-        if (insertError.code === "23505") {
-          // Unique constraint violation
-          return {
-            success: false,
-            error: "Friend request already exists",
-          };
-        }
-        return { success: false, error: "Failed to send friend request" };
-      }
-
-      await getFriendRequests();
-
-      // Send notification to addressee
-      sendPushNotification(
-        foundUser.uid,
-        profile.name,
-        profile.profilePicture,
-        '', // No conversation ID for friend requests
-        '', // No message URL
-        'friend_request'
-      ).catch((error) => {
-        console.warn("⚠️ Failed to send friend request notification:", error);
+      return result;
+    } catch (error) {
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:sendFriendRequest',
+        message: 'Error sending friend request',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
       });
-
-      return { success: true };
-    } catch (error: any) {
-      console.error("Error sending friend request:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to send friend request",
-      };
+      return { success: false, error: "Failed to send friend request" };
     }
   };
 
@@ -285,49 +137,23 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { error } = await supabase
-        .from("friendships")
-        .update({
-          status: "accepted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", requestId)
-        .eq("addressee_id", profile.uid);
-
-      if (error) {
-        return { success: false, error: "Failed to accept friend request" };
+      const result = await FriendshipService.acceptFriendRequest(requestId, profile);
+      if (result.success) {
+        await getFriendRequests();
+        await getFriends();
       }
-
-      await getFriendRequests();
-      await getFriends();
-
-      // Get the requester's info and send notification
-      const { data: friendRequest } = await supabase
-        .from("friendships")
-        .select("requester_id")
-        .eq("id", requestId)
-        .single();
-
-      if (friendRequest?.requester_id) {
-        sendPushNotification(
-          friendRequest.requester_id,
-          profile.name,
-          profile.profilePicture,
-          '',
-          '',
-          'friend_accepted'
-        ).catch((error) => {
-          console.warn("⚠️ Failed to send friend accepted notification:", error);
-        });
-      }
-
-      return { success: true };
-    } catch (error: any) {
-      console.error("Error accepting friend request:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to accept friend request",
-      };
+      return result;
+    } catch (error) {
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:acceptFriendRequest',
+        message: 'Error accepting friend request',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
+      return { success: false, error: "Failed to accept friend request" };
     }
   };
 
@@ -339,27 +165,22 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { error } = await supabase
-        .from("friendships")
-        .update({
-          status: "rejected",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", requestId)
-        .eq("addressee_id", profile.uid);
-
-      if (error) {
-        return { success: false, error: "Failed to reject friend request" };
+      const result = await FriendRequestService.rejectRequest(requestId, profile.uid);
+      if (result.success) {
+        await getFriendRequests();
       }
-
-      await getFriendRequests();
-      return { success: true };
-    } catch (error: any) {
-      console.error("Error rejecting friend request:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to reject friend request",
-      };
+      return result;
+    } catch (error) {
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:rejectFriendRequest',
+        message: 'Error rejecting friend request',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
+      return { success: false, error: "Failed to reject friend request" };
     }
   };
 
@@ -371,49 +192,23 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      // Get the request to find the other user
-      const { data: request, error: fetchError } = await supabase
-        .from("friendships")
-        .select("*")
-        .eq("id", requestId)
-        .single();
-
-      if (fetchError || !request) {
-        return { success: false, error: "Friend request not found" };
+      const result = await FriendshipService.blockUser(requestId, profile.uid);
+      if (result.success) {
+        await getFriendRequests();
+        await getFriends();
       }
-
-      const otherUserId =
-        request.requester_id === profile.uid
-          ? request.addressee_id
-          : request.requester_id;
-
-      // Update or create blocked status
-      const { error: updateError } = await supabase
-        .from("friendships")
-        .upsert(
-          {
-            requester_id: otherUserId,
-            addressee_id: profile.uid,
-            status: "blocked",
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "requester_id,addressee_id",
-          }
-        );
-
-      if (updateError) {
-        return { success: false, error: "Failed to block user" };
-      }
-
-      await getFriendRequests();
-      return { success: true };
-    } catch (error: any) {
-      console.error("Error blocking user:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to block user",
-      };
+      return result;
+    } catch (error) {
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:blockUser',
+        message: 'Error blocking user',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
+      return { success: false, error: "Failed to block user" };
     }
   };
 
@@ -425,50 +220,42 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
 
     try {
-      const { error } = await supabase
-        .from("friendships")
-        .delete()
-        .eq("id", requestId)
-        .eq("requester_id", profile.uid);
-
-      if (error) {
-        return { success: false, error: "Failed to cancel friend request" };
+      const result = await FriendRequestService.cancelRequest(requestId, profile.uid);
+      if (result.success) {
+        await getFriendRequests();
       }
-
-      await getFriendRequests();
-      return { success: true };
-    } catch (error: any) {
-      console.error("Error canceling friend request:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to cancel friend request",
-      };
+      return result;
+    } catch (error) {
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:cancelFriendRequest',
+        message: 'Error canceling friend request',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
+      return { success: false, error: "Failed to cancel friend request" };
     }
   };
 
-  const checkFriendshipStatus = async (
-    otherUserId: string
-  ): Promise<"accepted" | "pending" | "rejected" | "blocked" | "none"> => {
+  const checkFriendshipStatus = async (otherUserId: string): Promise<"accepted" | "pending" | "rejected" | "blocked" | "none"> => {
     if (!profile) {
       return "none";
     }
 
     try {
-      const { data, error } = await supabase
-        .from("friendships")
-        .select("*")
-        .or(
-          `and(requester_id.eq.${profile.uid},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${profile.uid})`
-        )
-        .limit(1);
-
-      if (error || !data || data.length === 0) {
-        return "none";
-      }
-
-      return data[0].status as "accepted" | "pending" | "rejected" | "blocked";
+      return await FriendRequestService.checkFriendshipStatus(profile.uid, otherUserId);
     } catch (error) {
-      console.error("Error checking friendship status:", error);
+      logAgentEvent({
+        location: 'FriendsProvider.tsx:checkFriendshipStatus',
+        message: 'Error checking friendship status',
+        data: {
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        },
+        hypothesisId: 'A',
+      });
       return "none";
     }
   };
@@ -480,131 +267,21 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
     }
   }, [profile]);
 
-  // Real-time subscription for friend requests
-  useEffect(() => {
-    if (!profile) {
-      return;
-    }
-
-    const channel = supabase.channel(`friendships_${profile.uid}`, {
-      config: {
-        broadcast: { self: true },
-      },
-    });
-
-    // Listen for new friend requests (INSERT) where user is addressee
-    channel
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "friendships",
-          filter: `addressee_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 New friend request received!", payload);
-          getFriendRequests();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "friendships",
-          filter: `requester_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 Friend request sent!", payload);
-          getFriendRequests();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "friendships",
-          filter: `addressee_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 Friend request updated!", payload);
-          getFriendRequests();
-          getFriends();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "friendships",
-          filter: `requester_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 Friend request status changed!", payload);
-          getFriendRequests();
-          getFriends();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "friendships",
-          filter: `addressee_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 Friend request deleted!", payload);
-          getFriendRequests();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "friendships",
-          filter: `requester_id=eq.${profile.uid}`,
-        },
-        (payload) => {
-          console.log("🔔 Friend request cancelled!", payload);
-          getFriendRequests();
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          console.log("✅ Friend requests real-time subscription active");
-        } else if (status === "CHANNEL_ERROR") {
-          console.error("❌ Friend requests subscription error");
-        } else {
-          console.log("🔄 Friend requests subscription status:", status);
-        }
-      });
-
-    return () => {
-      console.log("🔌 Unsubscribing from friend requests channel");
-      supabase.removeChannel(channel);
-    };
-  }, [profile]);
+  const value: FriendsContextType = {
+    friendRequests,
+    friends,
+    getFriendRequests,
+    getFriends,
+    sendFriendRequest,
+    acceptFriendRequest,
+    rejectFriendRequest,
+    blockUser,
+    cancelFriendRequest,
+    checkFriendshipStatus,
+  };
 
   return (
-    <FriendsContext.Provider
-      value={{
-        friendRequests,
-        friends,
-        getFriendRequests,
-        getFriends,
-        sendFriendRequest,
-        acceptFriendRequest,
-        rejectFriendRequest,
-        blockUser,
-        cancelFriendRequest,
-        checkFriendshipStatus,
-      }}
-    >
+    <FriendsContext.Provider value={value}>
       {children}
     </FriendsContext.Provider>
   );
@@ -612,9 +289,8 @@ export const FriendsProvider = ({ children }: { children: React.ReactNode }) => 
 
 export const useFriends = () => {
   const context = useContext(FriendsContext);
-  if (!context) {
+  if (context === null) {
     throw new Error("useFriends must be used within a FriendsProvider");
   }
   return context;
 };
-

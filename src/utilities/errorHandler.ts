@@ -1,4 +1,5 @@
 import { Alert } from "react-native";
+import AppLogger from "@/utilities/AppLogger";
 
 /**
  * Handles errors consistently across the application
@@ -14,7 +15,7 @@ export const handleError = (
   defaultMessage: string = "An unexpected error occurred"
 ): void => {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error(`[${context}] Error:`, errorMessage);
+  AppLogger.error(`[${context}] Error:`, errorMessage);
 
   if (showAlert) {
     Alert.alert("Error", errorMessage || defaultMessage);
@@ -49,4 +50,3 @@ export const handleApiError = (error: any, defaultMessage: string): string => {
 
   return defaultMessage;
 };
-

@@ -34,14 +34,23 @@ import ProfilePicturePicker from "@components/auth/ProfilePicturePicker";
 // Types & Styles
 import { SignupScreenProps } from "@app-types/navigation";
 import { styles } from "@styles/screens/SignupScreen.styles";
+import { colors } from "@styles/theme";
+import AppLogger from "@/utilities/AppLogger";
 
 const SignupScreen = ({ navigation }: SignupScreenProps) => {
-  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileImage, setProfileImage] = useState<ImagePickerAsset | null>(null);
 
   const defaultProfileImage = "https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=";
+
+  const validateUsername = (username: string): boolean => {
+    // Username should only contain letters, numbers, and underscores
+    // No spaces or special characters
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    return usernameRegex.test(username) && username.length >= 3;
+  };
 
   const {
     email,
@@ -55,15 +64,15 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
   } = useFormValidation();
 
   const getProfilePic = async () => {
-    console.log("📸 Profile picture button pressed");
+    AppLogger.debug("📸 Profile picture button pressed");
 
     try {
-      console.log("📸 Requesting media library permissions...");
+      AppLogger.debug("📸 Requesting media library permissions...");
       const { status } = await requestMediaLibraryPermissionsAsync();
-      console.log("📸 Permission status:", status);
+      AppLogger.debug("📸 Permission status:", { status });
 
       if (status === "granted") {
-        console.log("📸 Opening image picker...");
+        AppLogger.debug("📸 Opening image picker...");
         const result = await launchImageLibraryAsync({
           mediaTypes: ["images"],
           allowsMultipleSelection: false,
@@ -73,21 +82,21 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
           selectionLimit: 1,
         });
 
-        console.log("📸 Image picker result:", result.canceled ? "canceled" : "selected");
+        AppLogger.debug("📸 Image picker result:", { canceled: result.canceled });
 
         if (result.canceled) {
           return;
         }
 
         if (!result.canceled && result.assets[0].uri !== null) {
-          console.log("📸 Image selected:", result.assets[0].uri);
+          AppLogger.debug("📸 Image selected:", { uri: result.assets[0].uri });
           setProfileImage(result.assets[0]);
         }
       } else if (status === "undetermined") {
-        console.log("📸 Permission undetermined, requesting again...");
+        AppLogger.debug("📸 Permission undetermined, requesting again...");
         getProfilePic();
       } else {
-        console.log("📸 Permission denied, showing alert");
+        AppLogger.debug("📸 Permission denied, showing alert");
         Alert.alert(
           "Permission Required",
           "Please open settings and grant photo library access.",
@@ -98,7 +107,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
         );
       }
     } catch (error) {
-      console.error("📸 Error getting profile picture:", error);
+      AppLogger.error("📸 Error getting profile picture:", { error: error instanceof Error ? error.message : String(error) });
       Alert.alert("Error", "Failed to open image picker. Please try again.");
     }
   };
@@ -107,6 +116,13 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
     if (!profileImage) return null;
 
     try {
+      // Ensure user is authenticated before upload
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        AppLogger.error("User not authenticated for profile image upload");
+        return null;
+      }
+
       const fileName = `profile_${userId}_${new Date().getTime()}.png`;
       const response = await fetch(profileImage.uri);
       const buffer = await response.arrayBuffer();
@@ -116,7 +132,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
         .upload(fileName, buffer, { contentType: "image/png" });
 
       if (error) {
-        console.error("Error uploading profile image:", error.message);
+        AppLogger.error("Error uploading profile image:", { error: error.message });
         return null;
       }
 
@@ -127,7 +143,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
         return publicUrl;
       }
     } catch (error) {
-      console.error("Error uploading profile image:", error);
+      AppLogger.error("Error uploading profile image:", { error: error instanceof Error ? error.message : String(error) });
     }
     return null;
   };
@@ -138,8 +154,12 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
       Alert.alert("Error", "Please enter your email address");
       return;
     }
-    if (!fullName.trim()) {
-      Alert.alert("Error", "Please enter your full name");
+    if (!username.trim()) {
+      Alert.alert("Error", "Please enter a username");
+      return;
+    }
+    if (!validateUsername(username.trim())) {
+      Alert.alert("Error", "Username must be at least 3 characters and contain only letters, numbers, and underscores");
       return;
     }
     if (!password) {
@@ -162,11 +182,11 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
 
     setLoading(true);
     try {
-      console.log("🎯 SignupScreen: Starting signup...");
+      AppLogger.debug("🎯 SignupScreen: Starting signup...");
 
-      // Create the user account with name metadata for the trigger
+      // Create the user account with username metadata for the trigger
       const result = await signUpWithEmail(email, password, {
-        name: fullName.trim(),
+        name: username.trim(),
         profilePicture: defaultProfileImage,
       });
 
@@ -174,12 +194,12 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
         throw new Error("Failed to create user account");
       }
 
-      console.log("🎯 SignupScreen: User created, creating profile...");
+      AppLogger.debug("🎯 SignupScreen: User created, creating profile...");
 
       // Upload profile picture if provided
       let profilePictureUrl = defaultProfileImage;
       if (profileImage) {
-        console.log("🎯 SignupScreen: Uploading custom profile picture...");
+        AppLogger.debug("🎯 SignupScreen: Uploading custom profile picture...");
         const uploadedUrl = await uploadProfilePic(result.user.id);
         if (uploadedUrl) {
           profilePictureUrl = uploadedUrl;
@@ -187,16 +207,16 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
       }
 
       // Generate userCode for the new profile
-      const userCode = `${fullName.trim().replace(/\s+/g, '')}@${Math.floor(Math.random() * 9999)}`;
+      const userCode = `${username.trim()}@${Math.floor(Math.random() * 9999)}`;
 
       // Create the profile manually (in case trigger doesn't exist or fails)
-      console.log("🎯 SignupScreen: Inserting profile into database...");
+      AppLogger.debug("🎯 SignupScreen: Inserting profile into database...");
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
           uid: result.user.id,
           email: email,
-          name: fullName.trim(),
+          name: username.trim(),
           profilePicture: profilePictureUrl,
           conversations: [],
           userCode: userCode,
@@ -205,7 +225,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
       if (profileError) {
         // Check if it's a duplicate key error (trigger already created it)
         if (profileError.code === '23505') {
-          console.log("🎯 SignupScreen: Profile already exists (created by trigger)");
+          AppLogger.debug("🎯 SignupScreen: Profile already exists (created by trigger)");
 
           // If we have a custom image or need to set userCode, update the profile
           const updateData: any = {};
@@ -213,7 +233,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
             updateData.profilePicture = profilePictureUrl;
           }
           // Generate userCode if it doesn't exist (in case trigger created profile without it)
-          const userCode = `${fullName.trim().replace(/\s+/g, '')}@${Math.floor(Math.random() * 9999)}`;
+          const userCode = `${username.trim()}@${Math.floor(Math.random() * 9999)}`;
           updateData.userCode = userCode;
 
           if (Object.keys(updateData).length > 0) {
@@ -223,18 +243,18 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
               .eq("uid", result.user.id);
 
             if (updateError) {
-              console.error("Error updating profile:", updateError);
+              AppLogger.error("Error updating profile:", updateError);
             }
           }
         } else {
-          console.error("Error creating profile:", profileError);
+          AppLogger.error("Error creating profile:", profileError);
           throw new Error("Failed to create user profile");
         }
       } else {
-        console.log("🎯 SignupScreen: Profile created successfully");
+        AppLogger.debug("🎯 SignupScreen: Profile created successfully");
       }
 
-      console.log("🎯 SignupScreen: Signup complete!");
+      AppLogger.debug("🎯 SignupScreen: Signup complete!");
 
       // Check if email confirmation is required
       if (result.user && !result.session) {
@@ -258,7 +278,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
         ]);
       }
     } catch (error: any) {
-      console.error("🎯 SignupScreen: Signup error:", error);
+      AppLogger.error("🎯 SignupScreen: Signup error:", error);
       Alert.alert("Error", error.message || "Failed to create account");
     } finally {
       setLoading(false);
@@ -286,21 +306,23 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
             onPress={getProfilePic}
           />
 
-          {/* Full Name Field */}
+          {/* Username Field */}
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
-            value={fullName}
-            onChangeText={setFullName}
-            autoCapitalize="words"
-            autoComplete="name"
-            textContentType="name"
+            placeholder="Username"
+            placeholderTextColor={colors.textTertiary}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoComplete="username"
+            textContentType="username"
           />
 
           {/* Email */}
           <TextInput
             style={styles.input}
             placeholder="Email"
+            placeholderTextColor={colors.textTertiary}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -313,6 +335,7 @@ const SignupScreen = ({ navigation }: SignupScreenProps) => {
             <TextInput
               style={styles.passwordInput}
               placeholder="Password"
+              placeholderTextColor={colors.textTertiary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
