@@ -1,5 +1,5 @@
 // React
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text } from "react-native";
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -59,6 +59,12 @@ function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [appReady, setAppReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const loadingUserRef = useRef(true);
+
+  const setLoadingUserAndRef = useCallback((value: boolean) => {
+    loadingUserRef.current = value;
+    setLoadingUser(value);
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -78,7 +84,7 @@ function AppContent() {
             AppLogger.critical("Corrupted refresh token detected - clearing auth storage");
             await supabase.auth.signOut();
             setUser(null);
-            setLoadingUser(false);
+            setLoadingUserAndRef(false);
             return;
           }
           throw error;
@@ -97,7 +103,7 @@ function AppContent() {
         // Graceful degradation - proceed as logged out
         setUser(null);
       } finally {
-        setLoadingUser(false);
+        setLoadingUserAndRef(false);
       }
     };
 
@@ -110,10 +116,10 @@ function AppContent() {
 
     // Safety timeout - force proceed if auth takes too long
     const safetyTimeout = setTimeout(() => {
-      if (loadingUser) {
+      if (loadingUserRef.current) {
         AppLogger.critical("Auth safety timeout triggered - proceeding as logged out");
         setUser(null);
-        setLoadingUser(false);
+        setLoadingUserAndRef(false);
       }
     }, TIMEOUTS.AUTH_INIT);
 
