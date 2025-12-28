@@ -1,6 +1,6 @@
 {
   "name": "heyj",
-  "version": "1.0.0",
+  "version": "0.8.3",
   "main": "node_modules/expo/AppEntry.js",
   "packageManager": "yarn@1.22.22",
   "scripts": {
@@ -20,7 +20,11 @@
     "prebuild": "cp -v android/local.properties android/app/local.properties || true",
     "build:web": "npx expo export -p web",
     "start:web": "serve -s dist -l ${PORT:-3000} --listen tcp://0.0.0.0:${PORT:-3000}",
-    "start:webapp": "serve -s dist -l ${PORT:-3000} --listen tcp://0.0.0.0:${PORT:-3000}"
+    "start:webapp": "serve -s dist -l ${PORT:-3000} --listen tcp://0.0.0.0:${PORT:-3000}",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:major": "node scripts/bump-version.js major",
+    "version:current": "node -p \"require('./package.json').version\""
   },
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.0.1",
@@ -78,14 +82,19 @@
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
+    "@types/fs-extra": "^11.0.4",
     "@types/jest": "29.5.14",
     "@types/jimp": "^0.2.28",
     "@types/lodash": "^4.14.202",
     "@types/react": "~19.1.10",
+    "@types/semver": "^7.7.1",
     "@types/upng-js": "^2.1.5",
     "babel-plugin-module-resolver": "^5.0.2",
+    "fs-extra": "^11.3.3",
     "jest": "~29.7.0",
     "jest-expo": "^54.0.16",
+    "plist": "^3.1.0",
+    "semver": "^7.7.3",
     "serve": "^14.2.5",
     "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
