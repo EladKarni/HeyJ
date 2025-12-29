@@ -43,6 +43,9 @@
         "com.apple.developer.applesignin": [
           "Default",
           "Default"
+        ],
+        "com.apple.security.application-groups": [
+          "group.com.ekarni.heyjapp.onesignal"
         ]
       }
     },
