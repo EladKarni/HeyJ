@@ -18,7 +18,8 @@ import * as Clipboard from 'expo-clipboard';
 
 // Utilities & Providers
 import { useProfile } from "@utilities/ProfileProvider";
-import { useFriends } from "@utilities/FriendsProvider";
+import { useFriends } from "../../providers/FriendshipProvider";
+import AppLogger from "@/utilities/AppLogger";
 
 interface AddFriendModalProps {
   visible: boolean;
@@ -65,16 +66,18 @@ const AddFriendModal = ({ visible, onClose }: AddFriendModalProps) => {
 
       if (result.success) {
         Alert.alert("Success!", "Friend request sent!", [
-          { text: "OK", onPress: () => {
-            setFriendCode("");
-            onClose();
-          }}
+          {
+            text: "OK", onPress: () => {
+              setFriendCode("");
+              onClose();
+            }
+          }
         ]);
       } else {
         Alert.alert("Error", result.error || "Failed to send friend request");
       }
     } catch (error) {
-      console.error("❌ Error adding friend:", error);
+      AppLogger.error("❌ Error adding friend:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
     }
   };

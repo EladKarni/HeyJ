@@ -11,12 +11,12 @@ export const createStyles = (
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      overflow: "visible" as any,
     },
     listContainer: {
       paddingTop: Platform.OS === "ios" ? insets.top - 25 : 15,
       paddingBottom: 250,
-      justifyContent: "flex-end",
+      ...(Platform.OS !== "web" && { justifyContent: "flex-end" }),
+      flexGrow: 1,
     },
     messageContainer: {
       width: "100%",

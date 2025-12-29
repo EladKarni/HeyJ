@@ -4,19 +4,22 @@ export default class Message {
   uid: string;
   audioUrl: string;
   isRead: boolean;
+  conversationId?: string;
 
   constructor(
     messageId: string,
     timestamp: Date,
     uid: string,
     audioUrl: string,
-    isRead: boolean = false
+    isRead: boolean = false,
+    conversationId?: string
   ) {
     this.messageId = messageId;
     this.timestamp = timestamp;
     this.uid = uid;
     this.audioUrl = audioUrl;
     this.isRead = isRead;
+    this.conversationId = conversationId;
   }
 
   toJSON() {
@@ -26,6 +29,7 @@ export default class Message {
       uid: this.uid,
       audioUrl: this.audioUrl,
       isRead: this.isRead,
+      ...(this.conversationId && { conversationid: this.conversationId }),
     };
   }
 
@@ -35,7 +39,8 @@ export default class Message {
       new Date(data.timestamp),
       data.uid,
       data.audioUrl,
-      data.isRead ?? false
+      data.isRead ?? false,
+      data.conversationid || data.conversationId
     );
   }
 }

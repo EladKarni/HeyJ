@@ -2,7 +2,7 @@
   "expo": {
     "name": "HeyJ",
     "slug": "HeyJ",
-    "version": "1.0.0",
+    "version": "0.8.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,14 +10,23 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#fa7a3c"
     },
-    "assetBundlePatterns": ["**/*"],
-    "platforms": ["ios", "android", "web"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "remote-notification"],
+        "UIBackgroundModes": [
+          "audio",
+          "remote-notification"
+        ],
         "NSCameraUsageDescription": "Allow this app to access camera.",
         "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
         "ITSAppUsesNonExemptEncryption": false
@@ -25,13 +34,19 @@
       "runtimeVersion": {
         "policy": "sdkVersion"
       },
-      "bundleIdentifier": "com.ekarni.heyj",
+      "bundleIdentifier": "com.ekarni.heyjapp",
       "splash": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
       },
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default", "Default"]
+        "com.apple.developer.applesignin": [
+          "Default",
+          "Default"
+        ],
+        "com.apple.security.application-groups": [
+          "group.com.ekarni.heyjapp.onesignal"
+        ]
       }
     },
     "android": {
@@ -47,7 +62,7 @@
       "package": "com.ekarni.heyj",
       "runtimeVersion": "1.0.0",
       "splash": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
       }
     },
@@ -69,7 +84,11 @@
           "photosPermission": "The app accesses your photos."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-sqlite",
+      "expo-font",
+      "expo-asset",
+      "expo-audio"
     ],
     "extra": {
       "eas": {

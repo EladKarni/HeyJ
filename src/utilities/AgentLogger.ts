@@ -12,22 +12,34 @@ interface LogData {
   hypothesisId?: string;
 }
 
-export const logAgentEvent = (logData: LogData): void => {
-  // Only log in development
-  if (__DEV__) {
-    const payload = {
-      ...logData,
-      timestamp: Date.now(),
-      sessionId: SESSION_ID,
-      runId: RUN_ID,
-    };
+// Track if the endpoint is blocked to prevent spam
+let isEndpointBlocked = false;
 
-    fetch(AGENT_LOG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Silently fail - logging should never break the app
-    });
-  }
+export const logAgentEvent = (logData: LogData): void => {
+  // AgentLogger disabled - endpoint not running
+  // Uncomment below to enable agent logging if you have a logging server running on port 7242
+  return;
+
+  // Only log in development
+  // if (__DEV__ && !isEndpointBlocked) {
+  //   const payload = {
+  //     ...logData,
+  //     timestamp: Date.now(),
+  //     sessionId: SESSION_ID,
+  //     runId: RUN_ID,
+  //   };
+
+  //   fetch(AGENT_LOG_ENDPOINT, {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify(payload),
+  //   }).catch((error) => {
+  //     // If endpoint is blocked by browser extension, stop trying
+  //     if (error?.message?.includes('Failed to fetch') || error?.name === 'TypeError') {
+  //       isEndpointBlocked = true;
+  //       console.warn('AgentLogger: Endpoint blocked by browser extension. Disabling further logging attempts.');
+  //     }
+  //     // Silently fail - logging should never break the app
+  //   });
+  // }
 };

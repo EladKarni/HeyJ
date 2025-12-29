@@ -5,12 +5,17 @@ import Message from "@objects/Message";
 import Profile from "@objects/Profile";
 import { useProfile } from "./ProfileProvider";
 import { logAgentEvent } from "./AgentLogger";
+import { initDatabase } from "@database/database";
+import { syncManager, SyncStatus } from "@services/syncManager";
+import { saveConversation } from "@database/repositories/conversationRepository";
 
 interface ConversationsContextType {
   conversations: Conversation[];
   profiles: Profile[];
   getConversations: () => Promise<void>;
   updateMessageReadStatus: (messageId: string) => void;
+  syncStatus: SyncStatus;
+  refreshConversations: () => Promise<void>;
 }
 
 const ConversationsContext = createContext<ConversationsContextType | null>(null);
@@ -46,9 +51,73 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
   }
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncManager.getSyncStatus());
   const conversationChannelsRef = useRef<Map<string, any>>(new Map());
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initialize database on mount
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initDatabase();
+        console.log('✅ Database initialized');
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('❌ Failed to initialize database:', error);
+      }
+    };
+
+    init();
+
+    // Subscribe to sync status changes
+    const unsubscribe = syncManager.onSyncStatusChange(setSyncStatus);
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Modified getConversations - cache-first approach
   const getConversations = async () => {
+    if (!profile || !isInitialized) {
+      setConversations([]);
+      return;
+    }
+
+    try {
+      // STEP 1: Load from cache immediately
+      console.log('📦 Loading conversations from cache...');
+      const cachedConversations = await syncManager.getCachedConversations(20);
+
+      if (cachedConversations.length > 0) {
+        console.log(`✅ Loaded ${cachedConversations.length} conversations from cache`);
+        setConversations(cachedConversations);
+      }
+
+      // STEP 2: Sync in background
+      console.log('🔄 Starting background sync...');
+      const syncedConversations = await syncManager.syncConversations(
+        profile,
+        profile.conversations || [],
+        20
+      );
+
+      // Update UI with fresh data
+      if (syncedConversations.length > 0) {
+        setConversations(syncedConversations);
+      }
+    } catch (error) {
+      console.error('Error in getConversations:', error);
+
+      // If sync fails, keep showing cached data
+      const cachedConversations = await syncManager.getCachedConversations(20);
+      if (cachedConversations.length > 0) {
+        setConversations(cachedConversations);
+      }
+    }
+
+    // Keep old logic as fallback (commented for now - can be removed after testing)
+    /*
     if (!profile) {
       setConversations([]);
       return;
@@ -128,6 +197,23 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
     }
 
     setConversations(conversations);
+    */
+  };
+
+  // NEW: Manual refresh function
+  const refreshConversations = async () => {
+    if (!profile) return;
+
+    try {
+      const syncedConversations = await syncManager.syncConversations(
+        profile,
+        profile.conversations || [],
+        20
+      );
+      setConversations(syncedConversations);
+    } catch (error) {
+      console.error('Error refreshing conversations:', error);
+    }
   };
 
   useEffect(() => {
@@ -238,6 +324,7 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
                   hypothesisId: 'B',
                 });
 
+                // Update UI
                 setConversations((prevConversations) => {
                   const existing = prevConversations.find(c => c.conversationId === id);
                   if (!existing) {
@@ -269,6 +356,9 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
                     c.conversationId === id ? updatedConversation : c
                   );
                 });
+
+                // ALSO update cache
+                await saveConversation(updatedConversation);
               }
             }
           )
@@ -388,6 +478,8 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
         profiles,
         getConversations,
         updateMessageReadStatus,
+        syncStatus,
+        refreshConversations,
       }}
     >
       {children}

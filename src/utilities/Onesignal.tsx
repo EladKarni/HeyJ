@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './Supabase';
 import { handleError } from './errorHandler';
+import AppLogger from "@/utilities/AppLogger";
 
 // Get OneSignal App ID from environment
 const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID;
@@ -10,7 +11,7 @@ const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY;
 
 // Debug logging
-console.log('🔍 OneSignal Environment Check:', {
+AppLogger.debug('🔍 OneSignal Environment Check:', {
   appId: ONESIGNAL_APP_ID,
   hasAppId: !!ONESIGNAL_APP_ID,
   hasRestApiKey: !!ONESIGNAL_REST_API_KEY,
@@ -27,21 +28,21 @@ export async function initializeOneSignal(userId: string): Promise<void> {
     // Skip OneSignal SDK initialization on web (only mobile needs SDK)
     // Web can still send notifications via REST API in sendPushNotification()
     if (Platform.OS === 'web') {
-      console.log('🌐 Web platform detected - skipping OneSignal SDK initialization');
-      console.log('✅ Notifications can still be sent via REST API');
+      AppLogger.debug('🌐 Web platform detected - skipping OneSignal SDK initialization');
+      AppLogger.debug('✅ Notifications can still be sent via REST API');
       return;
     }
 
     if (!ONESIGNAL_APP_ID) {
-      console.error('❌ OneSignal App ID not configured:', {
+      AppLogger.error('❌ OneSignal App ID not configured:', {
         expoConfigExtra: Constants.expoConfig?.extra,
         processEnvKeys: Object.keys(process.env).filter(k => k.includes('ONESIGNAL')),
       });
-      console.warn('OneSignal App ID not configured - push notifications disabled');
+      AppLogger.warn('OneSignal App ID not configured - push notifications disabled');
       return;
     }
 
-    console.log('🔔 Initializing OneSignal for user:', userId);
+    AppLogger.debug('🔔 Initializing OneSignal for user:', userId);
 
     // Enable verbose logging for debugging (disable in production)
     if (__DEV__) {
@@ -59,10 +60,10 @@ export async function initializeOneSignal(userId: string): Promise<void> {
       await OneSignal.Notifications.requestPermission(true);
     } else if (Platform.OS === 'android') {
       const permission = await OneSignal.Notifications.getPermissionAsync();
-      console.log('📱 Android notification permission status:', permission);
+      AppLogger.debug('📱 Android notification permission status:', permission);
 
       if (!permission) {
-        console.log('📱 Requesting Android notification permission...');
+        AppLogger.debug('📱 Requesting Android notification permission...');
         await OneSignal.Notifications.requestPermission(true);
       }
     }
@@ -70,7 +71,7 @@ export async function initializeOneSignal(userId: string): Promise<void> {
     // Get player ID and save to profile
     await registerForPushNotificationsAsync(userId);
 
-    console.log('✅ OneSignal initialized successfully');
+    AppLogger.debug('✅ OneSignal initialized successfully');
   } catch (error) {
     handleError(error, 'initializeOneSignal');
   }
@@ -85,7 +86,7 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
     const subscriptionId = await OneSignal.User.pushSubscription.getIdAsync();
 
     if (subscriptionId) {
-      console.log('📱 OneSignal Subscription ID:', subscriptionId);
+      AppLogger.debug('📱 OneSignal Subscription ID:', subscriptionId);
 
       // Save subscription ID to push_tokens table
       const { error } = await supabase
@@ -101,16 +102,16 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
       if (error) {
         handleError(error, 'registerForPushNotificationsAsync');
       } else {
-        console.log('✅ Subscription ID saved to push_tokens');
+        AppLogger.debug('✅ Subscription ID saved to push_tokens');
       }
     } else {
-      console.log('⚠️ No OneSignal Subscription ID available yet, listening for changes...');
+      AppLogger.debug('⚠️ No OneSignal Subscription ID available yet, listening for changes...');
 
       // Listen for subscription changes (ID may be null on first run)
       OneSignal.User.pushSubscription.addEventListener('change', async (subscription) => {
         const newSubscriptionId = subscription.current.id;
         if (newSubscriptionId) {
-          console.log('📱 OneSignal Subscription ID received:', newSubscriptionId);
+          AppLogger.debug('📱 OneSignal Subscription ID received:', newSubscriptionId);
 
           const { error } = await supabase
             .from('push_tokens')
@@ -125,7 +126,7 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
           if (error) {
             handleError(error, 'registerForPushNotificationsAsync - subscription change');
           } else {
-            console.log('✅ Subscription ID saved to push_tokens');
+            AppLogger.debug('✅ Subscription ID saved to push_tokens');
           }
         }
       });
@@ -152,7 +153,7 @@ export const removeToken = async (uid: string): Promise<void> => {
     if (error) {
       handleError(error, 'removeToken');
     } else {
-      console.log('✅ OneSignal subscription ID removed from push_tokens');
+      AppLogger.debug('✅ OneSignal subscription ID removed from push_tokens');
     }
   } catch (error) {
     handleError(error, 'removeToken');
@@ -173,7 +174,7 @@ export async function sendPushNotification(
 ): Promise<void> {
   try {
     if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
-      console.warn('OneSignal not configured - skipping notification');
+      AppLogger.warn('OneSignal not configured - skipping notification');
       return;
     }
 
@@ -189,7 +190,7 @@ export async function sendPushNotification(
       notificationType,
     };
 
-    console.log('📨 Sending push notification to user:', toUid);
+    AppLogger.debug('📨 Sending push notification to user:', toUid);
 
     // Call OneSignal REST API
     const response = await fetch('https://api.onesignal.com/notifications', {
@@ -218,14 +219,14 @@ export async function sendPushNotification(
     const result = await response.json();
 
     if (!response.ok) {
-      console.error('❌ OneSignal API error:', result);
+      AppLogger.error('❌ OneSignal API error:', result);
       throw new Error(`OneSignal API error: ${JSON.stringify(result)}`);
     }
 
-    console.log('✅ Push notification sent successfully:', result.id);
+    AppLogger.debug('✅ Push notification sent successfully:', result.id);
   } catch (error) {
     // Don't block the main operation if notification fails
-    console.warn('⚠️ Failed to send push notification:', error);
+    AppLogger.warn('⚠️ Failed to send push notification:', error);
     handleError(error, 'sendPushNotification', false); // Don't show alert to user
   }
 }
