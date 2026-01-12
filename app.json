@@ -34,7 +34,7 @@
       "runtimeVersion": {
         "policy": "sdkVersion"
       },
-      "bundleIdentifier": "com.ekarni.heyjapp",
+      "bundleIdentifier": "com.ekarni.heyj",
       "splash": {
         "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
@@ -45,7 +45,7 @@
           "Default"
         ],
         "com.apple.security.application-groups": [
-          "group.com.ekarni.heyjapp.onesignal"
+          "group.com.ekarni.heyj.onesignal"
         ]
       }
     },
