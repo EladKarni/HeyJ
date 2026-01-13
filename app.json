@@ -41,11 +41,7 @@
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
-          "Default",
           "Default"
-        ],
-        "com.apple.security.application-groups": [
-          "group.com.ekarni.heyj.onesignal"
         ]
       }
     },
@@ -64,7 +60,8 @@
       "splash": {
         "backgroundColor": "#fa7a3c",
         "image": "./assets/splash.png"
-      }
+      },
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -73,15 +70,15 @@
     },
     "plugins": [
       [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production"
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#fa7a3c"
         }
       ],
       "expo-web-browser",

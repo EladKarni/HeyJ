@@ -1,4 +1,4 @@
-import { sendPushNotification } from "../../utilities/Onesignal";
+import { sendPushNotification } from "../../utilities/PushNotifications";
 import Profile from "../../objects/Profile";
 import AppLogger from "@/utilities/AppLogger";
 

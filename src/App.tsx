@@ -1,6 +1,6 @@
 // React
 import { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text } from "react-native";
+import { View, Text, AppState, AppStateStatus } from "react-native";
 import * as SplashScreen from 'expo-splash-screen';
 
 // Third-party libraries
@@ -13,6 +13,7 @@ import { AuthProviders } from "@utilities/AuthProviders";
 import { logAgentEvent } from "@utilities/AgentLogger";
 import { withTimeout, TIMEOUTS } from "@utilities/timeoutUtils";
 import AppLogger from "@utilities/AppLogger";
+import { clearBadgeCount } from "@utilities/PushNotifications";
 
 // Components
 import AppNavigator from "@components/navigation/AppNavigator";
@@ -145,6 +146,25 @@ function AppContent() {
       onLayoutRootView();
     }
   }, [loadingUser, onLayoutRootView]);
+
+  // Clear badge when app comes to foreground
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        // Clear badge when app becomes active
+        clearBadgeCount();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    // Clear badge on initial app load
+    clearBadgeCount();
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   if (loadingUser || !appReady) {
     logAgentEvent({

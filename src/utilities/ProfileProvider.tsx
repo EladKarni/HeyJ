@@ -5,7 +5,7 @@ import { View } from "react-native";
 import Profile from "@objects/Profile";
 import { handleError } from "./errorHandler";
 import { logAgentEvent } from "./AgentLogger";
-import { initializeOneSignal } from "./Onesignal";
+import { initializePushNotifications } from "./PushNotifications";
 import AppLogger from "@/utilities/AppLogger";
 
 const ProfileContext = createContext<{
@@ -151,16 +151,16 @@ const ProfileProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     updateProfile();
 
-    // Initialize OneSignal when user is authenticated
+    // Initialize push notifications when user is authenticated
     if (user?.id) {
-      AppLogger.debug('🔔 Attempting OneSignal initialization for user:', user.id);
-      initializeOneSignal(user.id)
+      AppLogger.debug('Attempting push notification initialization for user:', user.id);
+      initializePushNotifications(user.id)
         .then(() => {
-          AppLogger.debug('✅ OneSignal initialization complete');
+          AppLogger.debug('Push notification initialization complete');
         })
         .catch((error) => {
-          AppLogger.error('❌ OneSignal initialization failed:', error);
-          handleError(error, 'ProfileProvider - OneSignal initialization');
+          AppLogger.error('Push notification initialization failed:', error);
+          handleError(error, 'ProfileProvider - Push notification initialization');
         });
     }
   }, [user]);

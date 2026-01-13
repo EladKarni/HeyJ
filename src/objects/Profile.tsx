@@ -8,7 +8,6 @@ export default class Profile {
   email: string;
   conversations: string[];
   userCode: string;
-  oneSignalPlayerId: string | null;
 
   constructor(
     uid: string,
@@ -16,8 +15,7 @@ export default class Profile {
     name: string,
     email: string,
     conversations: string[],
-    userCode: string,
-    oneSignalPlayerId: string | null = null
+    userCode: string
   ) {
     this.uid = uid;
     this.profilePicture = profilePicture;
@@ -25,7 +23,6 @@ export default class Profile {
     this.email = email;
     this.conversations = conversations;
     this.userCode = userCode;
-    this.oneSignalPlayerId = oneSignalPlayerId;
   }
 
   toJSON() {
@@ -36,7 +33,6 @@ export default class Profile {
       email: this.email,
       conversations: this.conversations,
       userCode: this.userCode,
-      oneSignalPlayerId: this.oneSignalPlayerId,
     };
   }
 
@@ -47,7 +43,6 @@ export default class Profile {
       name: this.name,
       email: this.email,
       userCode: this.userCode,
-      oneSignalPlayerId: this.oneSignalPlayerId,
     };
   };
 
@@ -58,8 +53,7 @@ export default class Profile {
       data.name,
       data.email,
       data.conversations,
-      data.userCode || `${data.name}@${Math.floor(Math.random() * 9999)}`, // Fallback for existing profiles
-      data.oneSignalPlayerId || null // Fallback for existing profiles
+      data.userCode || `${data.name}@${Math.floor(Math.random() * 9999)}` // Fallback for existing profiles
     );
   }
 }

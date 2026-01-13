@@ -1,9 +1,5 @@
 import { Platform } from "react-native";
-import {
-  NotificationClickEvent,
-  NotificationWillDisplayEvent,
-  OneSignal,
-} from "react-native-onesignal";
+import * as Notifications from "expo-notifications";
 import { updateLastRead } from "../utilities/UpdateConversation";
 import { useCoreAudioPlaybackStore } from "../stores/audio/useCoreAudioPlaybackStore";
 
@@ -27,54 +23,54 @@ export class NotificationAudioService {
 
     const audioPlayer = useCoreAudioPlaybackStore.getState().audioPlayer;
 
-    const onForeground = (event: NotificationWillDisplayEvent) => {
-      const data = event.notification.additionalData as NotificationData;
+    // Handle notifications received while app is in foreground
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        const data = notification.request.content.data as NotificationData;
 
-      if (data && data.conversationId && data.messageUrl) {
-        setSelectedConversation(data.conversationId);
-        useCoreAudioPlaybackStore.getState().playFromUri(
-          data.messageUrl,
-          data.conversationId,
-          audioPlayer || undefined,
-          data.messageId,
-          updateMessageReadStatus
-        );
-        updateLastRead(data.conversationId, profileId);
-      }
-    };
-
-    const onClick = (event: NotificationClickEvent) => {
-      const data = event.notification.additionalData as NotificationData;
-
-      if (data && data.conversationId && data.messageUrl) {
-        setSelectedConversation(data.conversationId);
-
-        // Navigate to the conversation screen when notification is clicked
-        if (navigateToConversation) {
-          navigateToConversation(data.conversationId);
+        if (data && data.conversationId && data.messageUrl) {
+          setSelectedConversation(data.conversationId);
+          useCoreAudioPlaybackStore.getState().playFromUri(
+            data.messageUrl,
+            data.conversationId,
+            audioPlayer || undefined,
+            data.messageId,
+            updateMessageReadStatus
+          );
+          updateLastRead(data.conversationId, profileId);
         }
-
-        useCoreAudioPlaybackStore.getState().playFromUri(
-          data.messageUrl,
-          data.conversationId,
-          audioPlayer || undefined,
-          data.messageId,
-          updateMessageReadStatus
-        );
-        updateLastRead(data.conversationId, profileId);
       }
-    };
+    );
 
-    OneSignal.Notifications.addEventListener("foregroundWillDisplay", onForeground);
-    OneSignal.Notifications.addEventListener("click", onClick);
+    // Handle notification tap/click
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as NotificationData;
+
+        if (data && data.conversationId && data.messageUrl) {
+          setSelectedConversation(data.conversationId);
+
+          // Navigate to the conversation screen when notification is clicked
+          if (navigateToConversation) {
+            navigateToConversation(data.conversationId);
+          }
+
+          useCoreAudioPlaybackStore.getState().playFromUri(
+            data.messageUrl,
+            data.conversationId,
+            audioPlayer || undefined,
+            data.messageId,
+            updateMessageReadStatus
+          );
+          updateLastRead(data.conversationId, profileId);
+        }
+      }
+    );
 
     // Return cleanup function
     return () => {
-      OneSignal.Notifications.removeEventListener(
-        "foregroundWillDisplay",
-        onForeground
-      );
-      OneSignal.Notifications.removeEventListener("click", onClick);
+      foregroundSubscription.remove();
+      responseSubscription.remove();
     };
   }
 }

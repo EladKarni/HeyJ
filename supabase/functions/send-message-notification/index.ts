@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const payload: MessagePayload = await req.json();
     const newMessage = payload.record;
 
-    console.log("📨 Processing new message:", newMessage.messageId);
+    console.log("Processing new message:", newMessage.messageId);
 
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -37,8 +37,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (senderError || !senderProfile) {
-      console.error("❌ Failed to fetch sender profile:", senderError);
-      // Return 200 anyway so webhook doesn't retry
+      console.error("Failed to fetch sender profile:", senderError);
       return new Response(
         JSON.stringify({ error: "Sender profile not found" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
@@ -52,8 +51,7 @@ Deno.serve(async (req) => {
       .contains("messages", [newMessage.messageId]);
 
     if (convError || !conversations || conversations.length === 0) {
-      console.error("❌ Failed to find conversation:", convError);
-      // Return 200 anyway so webhook doesn't retry
+      console.error("Failed to find conversation:", convError);
       return new Response(JSON.stringify({ error: "Conversation not found" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -68,39 +66,42 @@ Deno.serve(async (req) => {
     );
 
     if (!recipientUid) {
-      console.log("⚠️ No recipient found (single-user conversation?)");
+      console.log("No recipient found (single-user conversation?)");
       return new Response(
         JSON.stringify({ success: true, skipped: "No recipient" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Step 4: Send push notification via OneSignal REST API
-    const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID");
-    const oneSignalRestApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
+    // Step 4: Get recipient's Expo Push Token from database
+    const { data: pushTokenData, error: tokenError } = await supabase
+      .from("push_tokens")
+      .select("tokens")
+      .eq("uid", recipientUid)
+      .single();
 
-    if (!oneSignalAppId || !oneSignalRestApiKey) {
-      console.error("❌ OneSignal credentials not configured");
+    if (tokenError || !pushTokenData?.tokens?.[0]) {
+      console.log("No push token found for recipient:", recipientUid);
       return new Response(
-        JSON.stringify({ error: "OneSignal credentials not configured" }),
+        JSON.stringify({ success: true, skipped: "No push token" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    const pushToken = pushTokenData.tokens[0];
+
+    // Step 5: Send push notification via Expo Push API
     const notificationResponse = await fetch(
-      "https://api.onesignal.com/notifications",
+      "https://exp.host/--/api/v2/push/send",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Key ${oneSignalRestApiKey}`,
         },
         body: JSON.stringify({
-          app_id: oneSignalAppId,
-          target_channel: "push",
-          include_external_user_ids: [recipientUid],
-          headings: { en: senderProfile.name },
-          contents: { en: "Sent you a voice message" },
+          to: pushToken,
+          title: senderProfile.name,
+          body: "Sent you a voice message",
           data: {
             conversationId: conversation.conversationId,
             messageUrl: newMessage.audioUrl,
@@ -109,13 +110,8 @@ Deno.serve(async (req) => {
             fromPhoto: senderProfile.profilePicture,
             notificationType: "message",
           },
-          large_icon: senderProfile.profilePicture,
-          ios_badgeType: "Increase",
-          ios_badgeCount: 1,
-          ios_sound: "default",
-          android_sound: "default",
-          priority: 10,
-          content_available: true,
+          sound: "default",
+          badge: 1,
         }),
       }
     );
@@ -123,23 +119,21 @@ Deno.serve(async (req) => {
     const result = await notificationResponse.json();
 
     if (!notificationResponse.ok) {
-      console.error("❌ OneSignal API error:", result);
-      // Return 200 anyway so webhook doesn't retry
+      console.error("Expo Push API error:", result);
       return new Response(
-        JSON.stringify({ error: "OneSignal API error", details: result }),
+        JSON.stringify({ error: "Expo Push API error", details: result }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    console.log("✅ Push notification sent successfully:", result.id);
+    console.log("Push notification sent successfully");
 
     return new Response(
-      JSON.stringify({ success: true, notificationId: result.id }),
+      JSON.stringify({ success: true, result }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("❌ Edge function error:", error);
-    // Return 200 anyway so webhook doesn't retry
+    console.error("Edge function error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {

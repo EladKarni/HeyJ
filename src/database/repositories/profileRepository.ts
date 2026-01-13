@@ -42,8 +42,7 @@ export const getProfile = async (uid: string): Promise<Profile | null> => {
     row.name,
     row.email,
     [], // conversations - not stored in cache
-    row.userCode,
-    null // oneSignalPlayerId - not stored in cache
+    row.userCode
   );
 };
 

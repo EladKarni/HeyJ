@@ -1,6 +1,6 @@
-import { sendPushNotification } from "./Onesignal";
+import { sendPushNotification } from "./PushNotifications";
 import { supabase } from "./Supabase";
-import AppLogger from "@/utilities/AppLogger";
+import AppLogger from "./AppLogger";
 
 /**
  * Test push notification flow

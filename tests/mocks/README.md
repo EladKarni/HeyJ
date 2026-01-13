@@ -5,14 +5,13 @@ This directory contains mock implementations of native modules that aren't avail
 ## Why Mocks?
 
 Some React Native libraries require native code that can't run in Expo Go:
-- `react-native-onesignal` - Push notifications
 - `rn-qr-generator` - QR code scanning
 
 Instead of showing errors, we provide mock implementations that:
-- ✅ Prevent startup errors
-- ✅ Allow the app to run in Expo Go
-- ✅ Log helpful messages
-- ✅ Gracefully disable features
+- Prevent startup errors
+- Allow the app to run in Expo Go
+- Log helpful messages
+- Gracefully disable features
 
 ## How It Works
 
@@ -20,20 +19,11 @@ The `metro.config.js` file tells Metro bundler to use these mocks instead of the
 
 ```javascript
 config.resolver.extraNodeModules = {
-  'react-native-onesignal': __dirname + '/mocks/react-native-onesignal.js',
   'rn-qr-generator': __dirname + '/mocks/rn-qr-generator.js',
 };
 ```
 
 ## Mocked Modules
-
-### react-native-onesignal.js
-Mocks OneSignal push notification service:
-- `OneSignal.initialize()` - Does nothing
-- `OneSignal.User.pushSubscription` - Returns null
-- `OneSignal.Notifications` - No-op methods
-
-**Result:** Push notifications are disabled in development.
 
 ### rn-qr-generator.js
 Mocks QR code scanning:
@@ -95,14 +85,3 @@ config.resolver.extraNodeModules = {
   'my-native-module': __dirname + '/mocks/my-native-module.js',
 };
 ```
-
-## Clean Console Output
-
-With these mocks, you should see:
-```
-✅ Supabase initialized in LOCAL mode
-📍 URL: http://127.0.0.1:54321
-📱 OneSignal mock - push notifications disabled in development
-```
-
-No more error messages! 🎉

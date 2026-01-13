@@ -69,3 +69,5 @@ package-lock.json
 
 # Supabase
 supabase/.temp
+# Firebase Service Account Keys
+*firebase-adminsdk*.json
