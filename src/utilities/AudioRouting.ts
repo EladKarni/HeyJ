@@ -1,11 +1,15 @@
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
+import AppLogger from "@/utilities/AppLogger";
 
 /**
  * Set audio volume based on speaker mode
  * @param audioPlayer - The audio player instance
  * @param speakerMode - true for higher volume (speaker), false for lower volume (earpiece)
  */
-export const setAudioVolume = (audioPlayer: any, speakerMode: boolean): void => {
+export const setAudioVolume = (
+  audioPlayer: any,
+  speakerMode: boolean
+): void => {
   if (!audioPlayer) {
     return;
   }
@@ -15,16 +19,20 @@ export const setAudioVolume = (audioPlayer: any, speakerMode: boolean): void => 
     // Earpiece (default): lower volume (0.2) - like a phone call
     // Speaker mode: higher volume (1.0) - like loudspeaker
     const volume = speakerMode ? 1.0 : 0.2;
-    
+
     // Check if audioPlayer has volume property (expo-audio AudioPlayer)
-    if (audioPlayer && typeof audioPlayer.volume !== 'undefined') {
+    if (audioPlayer && typeof audioPlayer.volume !== "undefined") {
       audioPlayer.volume = volume;
-      console.log(`🔊 Audio volume set to ${volume} (${speakerMode ? 'speaker' : 'earpiece'} mode)`);
+      AppLogger.debug(
+        `🔊 Audio volume set to ${volume} (${
+          speakerMode ? "speaker" : "earpiece"
+        } mode)`
+      );
     } else {
-      console.warn('AudioPlayer volume property not available');
+      AppLogger.warn("AudioPlayer volume property not available");
     }
   } catch (error) {
-    console.error('Error setting audio volume:', error);
+    AppLogger.error("Error setting audio volume:", error);
   }
 };
 
@@ -33,9 +41,13 @@ export const setAudioVolume = (audioPlayer: any, speakerMode: boolean): void => 
  * Now adjusts volume instead of routing audio
  * @param speakerMode - true for higher volume (speaker), false for lower volume (earpiece)
  */
-export const setAudioOutputRoute = async (speakerMode: boolean): Promise<void> => {
+export const setAudioOutputRoute = async (
+  speakerMode: boolean
+): Promise<void> => {
   // This function is kept for compatibility but now does nothing
   // Volume is set directly on the audioPlayer instance
   // The actual volume setting happens in RecordingPlayer when audioPlayer is available
-  console.log(`🔊 Speaker mode: ${speakerMode ? 'ON (high volume)' : 'OFF (low volume)'}`);
+  AppLogger.debug(
+    `🔊 Speaker mode: ${speakerMode ? "ON (high volume)" : "OFF (low volume)"}`
+  );
 };

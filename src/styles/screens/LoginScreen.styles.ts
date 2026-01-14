@@ -25,6 +25,9 @@ export const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
+  logoContainer: {
+    marginBottom: spacing.xl,
+  },
   title: {
     ...typography.title,
     marginBottom: 10,

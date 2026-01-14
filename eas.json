@@ -30,12 +30,14 @@
     },
     "production": {
       "distribution": "store",
+      "autoIncrement": true,
       "ios": {
         "buildConfiguration": "Release"
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "environment": "production"
     },
     "simulator": {
       "distribution": "internal",
@@ -45,6 +47,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "6475021790"
+      }
+    }
   }
 }

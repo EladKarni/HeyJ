@@ -9,10 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 
 // Components (for future OAuth implementation - currently commented out at line 121)
 import OAuthButton from "@components/auth/OAuthButton";
+import HeyJLogo from "@components/HeyJLogo";
 
 // Utilities
 import { signInWithEmail } from "@utilities/AuthHelper";
@@ -20,6 +24,8 @@ import { signInWithEmail } from "@utilities/AuthHelper";
 // Types & Styles
 import { LoginScreenProps } from "@app-types/navigation";
 import { styles } from "@styles/screens/LoginScreen.styles";
+import { colors } from "@styles/theme";
+import AppLogger from "@/utilities/AppLogger";
 
 
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
@@ -36,41 +42,48 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
 
     setLoading(true);
     try {
-      console.log('🎯 LoginScreen: Starting signin...');
+      AppLogger.debug('🎯 LoginScreen: Starting signin...');
       await signInWithEmail(email, password);
-      console.log('🎯 LoginScreen: Signin completed');
+      AppLogger.debug('🎯 LoginScreen: Signin completed');
       // Keep loading true - auth state change will handle navigation
     } catch (error: any) {
-      console.error('🎯 LoginScreen: Auth error:', error);
+      AppLogger.error('🎯 LoginScreen: Auth error:', error);
       Alert.alert("Error", error.message || "Authentication failed");
       setLoading(false);
       return;
     }
 
     // If we get here with loading still true, we're waiting for auth state change
-    console.log('🎯 LoginScreen: Waiting for auth state change...');
+    AppLogger.debug('🎯 LoginScreen: Waiting for auth state change...');
   };
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { minHeight: '100%' }]}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContainer, { minHeight: '100%' }]}
+        contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { minHeight: '100%' }]}>
-          <Text style={styles.title}>Welcome to HeyJ</Text>
-          <Text style={styles.subtitle}>Voice messaging made simple</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <HeyJLogo width={120} height={120} />
+            </View>
+            <Text style={styles.title}>Welcome to HeyJ</Text>
+            <Text style={styles.subtitle}>Voice messaging made simple</Text>
 
-          {/* Email/Password Section */}
-          <View style={styles.emailSection}>
+            {/* Email/Password Section */}
+            <View style={styles.emailSection}>
             <Text style={styles.sectionTitle}>Sign In</Text>
 
             <TextInput
               style={styles.input}
               placeholder="Email"
+              placeholderTextColor={colors.textTertiary}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -83,6 +96,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor={colors.textTertiary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -94,9 +108,11 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
                 onPress={() => setShowPassword((prev) => !prev)}
                 accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
-                <Text style={{ color: '#007AFF', fontSize: 14 }}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
+                <Image
+                  source={showPassword ? require('@assets/hidden.png') : require('@assets/eye.png')}
+                  style={{ width: 24, height: 24, tintColor: '#c48b6eff' }}
+                  resizeMode="contain"
+                />
               </TouchableOpacity>
             </View>
 
@@ -120,18 +136,19 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
             </TouchableOpacity>
           </View>
 
-          {/* OAuth Section - commented out until social logins are setup */}
-          {false && (
-            <View style={styles.oauthSection}>
-              <Text style={styles.divider}>OR</Text>
-              <Text style={styles.sectionTitle}>Continue with</Text>
-              <View style={styles.oauthButtons}>
-                <OAuthButton type="google" />
-                <OAuthButton type="apple" />
+            {/* OAuth Section - commented out until social logins are setup */}
+            {false && (
+              <View style={styles.oauthSection}>
+                <Text style={styles.divider}>OR</Text>
+                <Text style={styles.sectionTitle}>Continue with</Text>
+                <View style={styles.oauthButtons}>
+                  <OAuthButton type="google" />
+                  <OAuthButton type="apple" />
+                </View>
               </View>
-            </View>
-          )}
-        </View>
+            )}
+          </View>
+        </TouchableWithoutFeedback>
       </ScrollView>
     </KeyboardAvoidingView>
   );

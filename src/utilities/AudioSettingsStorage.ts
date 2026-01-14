@@ -1,8 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppLogger from "@/utilities/AppLogger";
 
 const STORAGE_KEYS = {
-  AUTOPLAY: '@HeyJ:audioSettings:autoplay',
-  SPEAKER_MODE: '@HeyJ:audioSettings:speakerMode',
+  AUTOPLAY: "@HeyJ:audioSettings:autoplay",
+  SPEAKER_MODE: "@HeyJ:audioSettings:speakerMode",
 };
 
 const DEFAULTS = {
@@ -18,21 +19,29 @@ export class AudioSettingsStorage {
   static async getAutoplay(): Promise<boolean> {
     try {
       const value = await AsyncStorage.getItem(STORAGE_KEYS.AUTOPLAY);
-      console.log('[AudioSettingsStorage] getAutoplay - raw value:', value);
+      AppLogger.debug("[AudioSettingsStorage] getAutoplay - raw value:", value);
       if (value === null) {
-        console.log('[AudioSettingsStorage] getAutoplay - no stored value, using default:', DEFAULTS.AUTOPLAY);
+        AppLogger.debug(
+          "[AudioSettingsStorage] getAutoplay - no stored value, using default:",
+          DEFAULTS.AUTOPLAY
+        );
         return DEFAULTS.AUTOPLAY;
       }
       const parsed = JSON.parse(value);
-      console.log('[AudioSettingsStorage] getAutoplay - parsed value:', parsed, 'type:', typeof parsed);
+      AppLogger.debug(
+        "[AudioSettingsStorage] getAutoplay - parsed value:",
+        parsed,
+        "type:",
+        typeof parsed
+      );
       // JSON.parse should return a boolean, but ensure it's actually a boolean
-      if (typeof parsed === 'boolean') {
+      if (typeof parsed === "boolean") {
         return parsed;
       }
       // Fallback: convert to boolean if somehow it's not
-      return parsed === true || parsed === 'true';
+      return parsed === true || parsed === "true";
     } catch (error) {
-      console.error('Error loading autoplay setting:', error);
+      AppLogger.error("Error loading autoplay setting:", error);
       return DEFAULTS.AUTOPLAY;
     }
   }
@@ -49,13 +58,13 @@ export class AudioSettingsStorage {
       }
       const parsed = JSON.parse(value);
       // JSON.parse should return a boolean, but ensure it's actually a boolean
-      if (typeof parsed === 'boolean') {
+      if (typeof parsed === "boolean") {
         return parsed;
       }
       // Fallback: convert to boolean if somehow it's not
-      return parsed === true || parsed === 'true';
+      return parsed === true || parsed === "true";
     } catch (error) {
-      console.error('Error loading speaker mode setting:', error);
+      AppLogger.error("Error loading speaker mode setting:", error);
       return DEFAULTS.SPEAKER_MODE;
     }
   }
@@ -66,11 +75,16 @@ export class AudioSettingsStorage {
    */
   static async setAutoplay(enabled: boolean): Promise<void> {
     try {
-      console.log('[AudioSettingsStorage] setAutoplay - saving:', enabled);
-      await AsyncStorage.setItem(STORAGE_KEYS.AUTOPLAY, JSON.stringify(enabled));
-      console.log('[AudioSettingsStorage] setAutoplay - saved successfully');
+      AppLogger.debug("[AudioSettingsStorage] setAutoplay - saving:", enabled);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.AUTOPLAY,
+        JSON.stringify(enabled)
+      );
+      AppLogger.debug(
+        "[AudioSettingsStorage] setAutoplay - saved successfully"
+      );
     } catch (error) {
-      console.error('Error saving autoplay setting:', error);
+      AppLogger.error("Error saving autoplay setting:", error);
     }
   }
 
@@ -80,9 +94,12 @@ export class AudioSettingsStorage {
    */
   static async setSpeakerMode(enabled: boolean): Promise<void> {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.SPEAKER_MODE, JSON.stringify(enabled));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.SPEAKER_MODE,
+        JSON.stringify(enabled)
+      );
     } catch (error) {
-      console.error('Error saving speaker mode setting:', error);
+      AppLogger.error("Error saving speaker mode setting:", error);
     }
   }
 
@@ -90,7 +107,10 @@ export class AudioSettingsStorage {
    * Load both settings at once
    * @returns Promise with both autoplay and speakerMode settings
    */
-  static async getAllSettings(): Promise<{ autoplay: boolean; speakerMode: boolean }> {
+  static async getAllSettings(): Promise<{
+    autoplay: boolean;
+    speakerMode: boolean;
+  }> {
     try {
       const [autoplay, speakerMode] = await Promise.all([
         this.getAutoplay(),
@@ -98,7 +118,7 @@ export class AudioSettingsStorage {
       ]);
       return { autoplay, speakerMode };
     } catch (error) {
-      console.error('Error loading audio settings:', error);
+      AppLogger.error("Error loading audio settings:", error);
       return {
         autoplay: DEFAULTS.AUTOPLAY,
         speakerMode: DEFAULTS.SPEAKER_MODE,

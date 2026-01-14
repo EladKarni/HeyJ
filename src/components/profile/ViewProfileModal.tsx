@@ -24,7 +24,7 @@ import UUID from "react-native-uuid";
 import { supabase } from "@utilities/Supabase";
 import { useProfile } from "@utilities/ProfileProvider";
 import { useConversations } from "@utilities/ConversationsProvider";
-import { useFriends } from "@utilities/FriendsProvider";
+import { useFriends } from "../../providers/FriendshipProvider";
 import { findOrCreateConversation } from "@utilities/FindOrCreateConversation";
 
 // Components
@@ -37,6 +37,7 @@ import Conversation from "@objects/Conversation";
 
 // Styles
 import { createStyles } from "@styles/components/profile/ViewProfileModal.styles";
+import AppLogger from "@/utilities/AppLogger";
 
 const ViewProfileModal = () => {
   const {
@@ -98,7 +99,14 @@ const ViewProfileModal = () => {
       return;
     }
 
-    const fileName = `profile_${profile.uid}_${new Date().getTime()}.png`;
+    // Ensure user is authenticated before upload
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      AppLogger.error("User not authenticated for profile image upload");
+      return;
+    }
+
+    const fileName = `${profile.uid}/profile_${profile.uid}_${Date.now()}.png`;
     const response = await fetch(uri);
     const buffer = await response.arrayBuffer();
 
@@ -107,7 +115,7 @@ const ViewProfileModal = () => {
       .upload(fileName, buffer, { contentType: "image/png" });
 
     if (error) {
-      console.error("Error uploading profile image:", error.message);
+      AppLogger.error("Error uploading profile image:", { error: error.message });
       saveProfile(
         new Profile(
           profile.uid,
@@ -165,7 +173,7 @@ const ViewProfileModal = () => {
 
     if (data && data[0]) {
       const otherProfile = data[0];
-      
+
       try {
         // Use findOrCreateConversation to ensure we don't create duplicates
         const result = await findOrCreateConversation(profile.uid, uid);
@@ -197,7 +205,7 @@ const ViewProfileModal = () => {
             .eq("uid", uid);
 
           if (e1) {
-            console.error("Error updating other profile:", e1);
+            AppLogger.error("Error updating other profile:", e1);
           }
         }
 
@@ -211,7 +219,7 @@ const ViewProfileModal = () => {
             .eq("uid", profile.uid);
 
           if (e2) {
-            console.error("Error updating current profile:", e2);
+            AppLogger.error("Error updating current profile:", e2);
           }
         }
 
@@ -222,7 +230,7 @@ const ViewProfileModal = () => {
           { text: "OK", onPress: () => setViewProfile(false) }
         ]);
       } catch (error) {
-        console.error("Error finding/creating conversation:", error);
+        AppLogger.error("Error finding/creating conversation:", { error: error instanceof Error ? error.message : String(error) });
         Alert.alert("Error", "Failed to create conversation. Please try again.");
       }
     } else {
