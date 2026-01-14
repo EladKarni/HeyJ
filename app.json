@@ -21,14 +21,14 @@
       "web"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "UIBackgroundModes": [
           "audio",
           "remote-notification"
         ],
-        "NSCameraUsageDescription": "Allow this app to access camera.",
-        "NSMicrophoneUsageDescription": "Allow this app to access your microphone",
+        "NSCameraUsageDescription": "Allow this app to access camera for uploading your avatar photo.",
+        "NSMicrophoneUsageDescription": "Allow this app to access your microphone for recording your voice memos.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "runtimeVersion": {
