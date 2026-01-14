@@ -43,9 +43,6 @@
         "com.apple.developer.applesignin": [
           "Default",
           "Default"
-        ],
-        "com.apple.security.application-groups": [
-          "group.com.ekarni.heyj.onesignal"
         ]
       }
     },
@@ -72,12 +69,6 @@
       "output": "single"
     },
     "plugins": [
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production"
-        }
-      ],
       [
         "expo-image-picker",
         {
