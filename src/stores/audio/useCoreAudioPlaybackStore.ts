@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { AudioPlayer, AudioPlayerStatus } from "@app-types/audio";
 import { playAudioFromUri } from "@services/audioService";
-import { markMessageAsRead } from "@utilities/MarkMessageAsRead";
+import { messageReadService } from "@services/MessageReadService";
 import AppLogger from "@/utilities/AppLogger";
 
 interface CoreAudioPlaybackState {
@@ -29,7 +29,8 @@ interface CoreAudioPlaybackState {
     conversationId?: string,
     audioPlayer?: AudioPlayer,
     messageId?: string,
-    updateMessageReadStatus?: (messageId: string) => void
+    updateMessageReadStatus?: (messageId: string) => void,
+    rollbackMessageReadStatus?: (messageId: string) => void
   ) => Promise<void>;
 }
 
@@ -83,7 +84,7 @@ export const useCoreAudioPlaybackStore = create<CoreAudioPlaybackState>(
 
     setAutoplayEnabled: (enabled) => set({ autoplayEnabled: enabled }),
 
-    playFromUri: async (uri, conversationId, audioPlayer, messageId, updateMessageReadStatus) => {
+    playFromUri: async (uri, conversationId, audioPlayer, messageId, updateMessageReadStatus, rollbackMessageReadStatus) => {
       try {
         const player = audioPlayer || get().audioPlayer;
         if (!player) {
@@ -98,12 +99,19 @@ export const useCoreAudioPlaybackStore = create<CoreAudioPlaybackState>(
           uri
         );
 
-        // Mark message as read immediately when playback starts
-        if (messageId) {
-          AppLogger.debug("📖 Marking message as read on playback start:", messageId);
-          const success = await markMessageAsRead(messageId);
-          if (success && updateMessageReadStatus) {
-            updateMessageReadStatus(messageId);
+        // Mark message as read using centralized service with optimistic updates
+        // This is the ONLY place that marks messages as read during playback
+        if (messageId && updateMessageReadStatus && rollbackMessageReadStatus) {
+          // Check if already marked recently to prevent duplicates
+          if (!messageReadService.wasRecentlyMarked(messageId)) {
+            AppLogger.debug("📖 Marking message as read on playback start:", messageId);
+            await messageReadService.markAsRead(
+              messageId,
+              updateMessageReadStatus,
+              rollbackMessageReadStatus
+            );
+          } else {
+            AppLogger.debug("⏭️ Skipping mark - already marked recently:", messageId);
           }
         }
 

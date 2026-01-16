@@ -40,7 +40,7 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const conversationId = route.params.conversationId;
   const { profile } = useProfile();
-  const { conversations, profiles, updateMessageReadStatus } =
+  const { conversations, profiles, updateMessageReadStatus, rollbackMessageReadStatus } =
     useConversations();
   const insets = useSafeAreaInsets();
 
@@ -133,7 +133,6 @@ const ConversationScreen = ({ route }: ConversationScreenProps) => {
         currentUserProfile={profile}
         autoplay={false}
         isAutoPlaying={false}
-        onMarkAsRead={updateMessageReadStatus}
         messageContainerStyle={styles.messageContainer}
       />
     );

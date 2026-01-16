@@ -19,7 +19,7 @@ import AppLogger from "@/utilities/AppLogger";
 const ConversationsScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { profile } = useProfile();
-  const { conversations, profiles, updateMessageReadStatus } = useConversations();
+  const { conversations, profiles, updateMessageReadStatus, rollbackMessageReadStatus } = useConversations();
   const {
     friendRequests,
     getFriendRequests,
@@ -112,6 +112,7 @@ const ConversationsScreen = () => {
         profile.uid,
         audioPlayer,
         updateMessageReadStatus,
+        rollbackMessageReadStatus,
         speakerMode
       );
     }

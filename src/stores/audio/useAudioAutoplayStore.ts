@@ -10,18 +10,21 @@ interface AutoplayState {
   profileId: string | undefined;
   lastMessageCounts: Record<string, number>;
   updateMessageReadStatus: ((messageId: string) => void) | undefined;
+  rollbackMessageReadStatus: ((messageId: string) => void) | undefined;
 
   // Actions
   setConversations: (conversations: Conversation[]) => void;
   setProfileId: (profileId: string | undefined) => void;
   setUpdateMessageReadStatus: (fn: (messageId: string) => void) => void;
+  setRollbackMessageReadStatus: (fn: (messageId: string) => void) => void;
   updateMessageCount: (conversationId: string, count: number) => void;
   handleAutoPlay: (
     conversations: Conversation[],
     autoplay: boolean,
     profileId: string | undefined,
     audioPlayer: AudioPlayer,
-    updateMessageReadStatus?: (messageId: string) => void
+    updateMessageReadStatus?: (messageId: string) => void,
+    rollbackMessageReadStatus?: (messageId: string) => void
   ) => void;
   playNextUnreadMessage: () => void;
 }
@@ -31,12 +34,15 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
   profileId: undefined,
   lastMessageCounts: {},
   updateMessageReadStatus: undefined,
+  rollbackMessageReadStatus: undefined,
 
   setConversations: (conversations) => set({ conversations }),
 
   setProfileId: (profileId) => set({ profileId }),
 
   setUpdateMessageReadStatus: (fn) => set({ updateMessageReadStatus: fn }),
+
+  setRollbackMessageReadStatus: (fn) => set({ rollbackMessageReadStatus: fn }),
 
   updateMessageCount: (conversationId, count) =>
     set((state) => ({
@@ -46,9 +52,12 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
       },
     })),
 
-  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus) => {
+  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus, rollbackMessageReadStatus) => {
     if (updateMessageReadStatus) {
       set({ updateMessageReadStatus });
+    }
+    if (rollbackMessageReadStatus) {
+      set({ rollbackMessageReadStatus });
     }
     if (!profileId) return;
 
@@ -121,7 +130,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             conversation.conversationId,
             audioPlayer!,
             newestUnheard.messageId,
-            get().updateMessageReadStatus
+            get().updateMessageReadStatus,
+            get().rollbackMessageReadStatus
           );
       } else if (lastCount === undefined && !isInitialLoad) {
         // First time seeing this conversation (not initial app load) - autoplay OLDEST unread message
@@ -137,7 +147,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             conversation.conversationId,
             audioPlayer,
             oldestUnheard.messageId,
-            get().updateMessageReadStatus
+            get().updateMessageReadStatus,
+            get().rollbackMessageReadStatus
           );
       }
 
@@ -177,7 +188,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             currentConversation.conversationId,
             useCoreAudioPlaybackStore.getState().audioPlayer!,
             nextMessage.messageId,
-            get().updateMessageReadStatus
+            get().updateMessageReadStatus,
+            get().rollbackMessageReadStatus
           );
         return;
       }
@@ -202,7 +214,8 @@ export const useAudioAutoplayStore = create<AutoplayState>((set, get) => ({
             conversation.conversationId,
             useCoreAudioPlaybackStore.getState().audioPlayer!,
             nextMessage.messageId,
-            get().updateMessageReadStatus
+            get().updateMessageReadStatus,
+            get().rollbackMessageReadStatus
           );
         return;
       }

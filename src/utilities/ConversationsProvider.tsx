@@ -14,6 +14,7 @@ interface ConversationsContextType {
   profiles: Profile[];
   getConversations: () => Promise<void>;
   updateMessageReadStatus: (messageId: string) => void;
+  rollbackMessageReadStatus: (messageId: string) => void;
   syncStatus: SyncStatus;
   refreshConversations: () => Promise<void>;
 }
@@ -467,6 +468,39 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
     });
   };
 
+  const rollbackMessageReadStatus = (messageId: string) => {
+    setConversations((prevConversations) => {
+      return prevConversations.map((conv) => {
+        const messageIndex = conv.messages.findIndex(
+          (m) => m.messageId === messageId
+        );
+
+        if (messageIndex !== -1) {
+          const updatedMessages = [...conv.messages];
+          const originalMessage = updatedMessages[messageIndex];
+          // Create a new Message instance with isRead reverted to false
+          updatedMessages[messageIndex] = new Message(
+            originalMessage.messageId,
+            originalMessage.timestamp,
+            originalMessage.uid,
+            originalMessage.audioUrl,
+            false // isRead = false (rollback)
+          );
+
+          // Create a new Conversation instance with updated messages
+          return new Conversation(
+            conv.conversationId,
+            conv.uids,
+            updatedMessages,
+            conv.lastRead
+          );
+        }
+
+        return conv;
+      });
+    });
+  };
+
   useEffect(() => {
     getProfiles();
   }, [conversations]);
@@ -478,6 +512,7 @@ export const ConversationsProvider = ({ children }: { children: React.ReactNode 
         profiles,
         getConversations,
         updateMessageReadStatus,
+        rollbackMessageReadStatus,
         syncStatus,
         refreshConversations,
       }}

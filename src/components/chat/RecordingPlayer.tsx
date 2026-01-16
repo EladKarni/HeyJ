@@ -6,7 +6,6 @@ import {
   AudioSource,
   setAudioModeAsync
 } from "expo-audio";
-import { markMessageAsRead } from "@utilities/MarkMessageAsRead";
 import { useAudioSettings } from "@utilities/AudioSettingsProvider";
 import { supabase } from "@utilities/Supabase";
 import { loadAudioFile } from "@services/audioService";
@@ -31,7 +30,6 @@ const RecordingPlayer = ({
   autoPlay,
   onPlaybackFinished,
   stopAutoplay,
-  onMarkAsRead,
 }: {
   uri: string;
   currentUri: string;
@@ -46,13 +44,11 @@ const RecordingPlayer = ({
   autoPlay?: boolean;
   onPlaybackFinished?: () => void;
   stopAutoplay?: () => void;
-  onMarkAsRead?: (messageId: string) => void;
 }) => {
   const [file, setFile] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [localIsRead, setLocalIsRead] = useState(isRead || false);
-  const hasMarkedAsRead = useRef(false);
   const hasToggledRead = useRef(false);
   const hasAutoPlayed = useRef(false);
   const { speakerMode, autoplay } = useAudioSettings();
@@ -64,25 +60,6 @@ const RecordingPlayer = ({
 
   const [duration, setDuration] = useState<number | null>(0);
   const [position, setPosition] = useState(0);
-
-  const handlePlayStart = () => {
-    // Only mark as read if recipient is playing (not the sender) and this is the current message
-    // Double-check that we're actually playing this specific message
-    if (!hasMarkedAsRead.current && currentUserUid !== senderUid && currentUri === uri && playerStatus.playing) {
-      AppLogger.debug("📖 Marking message as read:", messageId, "URI:", uri, "Playing:", playerStatus.playing);
-      markMessageAsRead(messageId);
-      hasMarkedAsRead.current = true;
-      setLocalIsRead(true);
-    } else {
-      AppLogger.debug("⚠️ Not marking as read:", {
-        hasMarkedAsRead: hasMarkedAsRead.current,
-        isRecipient: currentUserUid !== senderUid,
-        isCurrentMessage: currentUri === uri,
-        isPlaying: playerStatus.playing,
-        messageId
-      });
-    }
-  };
 
   const toggleReadStatus = async () => {
     const currentDisplayIsRead = hasToggledRead.current ? localIsRead : (isRead || false);
@@ -260,8 +237,7 @@ const RecordingPlayer = ({
         audioPlayer.pause();
         setPosition(0);
       }
-      // Reset the marked as read flag when switching to a different message
-      hasMarkedAsRead.current = false;
+      // Reset autoplay flag when switching to a different message
       hasAutoPlayed.current = false;
     } else if (currentUri === uri && autoPlay && !hasAutoPlayed.current && currentUserUid !== senderUid) {
       // Auto-play when this becomes the current message and autoplay is enabled
@@ -286,27 +262,6 @@ const RecordingPlayer = ({
       setLocalIsRead(true);
     }
   }, [isRead]);
-
-  // Watch for playback start and mark as read when playing starts
-  useEffect(() => {
-    // Only mark as read if:
-    // 1. This is the current message (currentUri === uri)
-    // 2. Player is actually playing (playerStatus.playing)
-    // 3. User is the recipient (not the sender)
-    // 4. We haven't already marked it as read
-    // 5. Audio is ready
-    if (
-      currentUri === uri &&
-      playerStatus.playing &&
-      currentUserUid !== senderUid &&
-      !hasMarkedAsRead.current &&
-      isReady &&
-      file
-    ) {
-      AppLogger.debug("🎵 Audio playing - marking as read:", messageId);
-      handlePlayStart();
-    }
-  }, [playerStatus.playing, currentUri, uri, currentUserUid, senderUid, isReady, file, messageId]);
 
   // Sync duration when player is ready (regardless of currentUri)
   useEffect(() => {
@@ -368,8 +323,6 @@ const RecordingPlayer = ({
     // If this is not the current playing audio, switch to it
     if (currentUri !== uri) {
       setCurrentUri(uri);
-      // Reset the marked as read flag when switching to a different message
-      hasMarkedAsRead.current = false;
       // Stop autoplay when user manually interacts with playback
       // This prevents autoplay from interfering with manual playback
       if (stopAutoplay) {

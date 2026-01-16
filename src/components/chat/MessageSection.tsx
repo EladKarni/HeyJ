@@ -15,7 +15,6 @@ interface MessageSectionProps {
   isAutoPlaying: boolean;
   playNextUnreadMessage?: () => void;
   stopAutoplay?: () => void;
-  onMarkAsRead?: (messageId: string) => void;
   messageContainerStyle: any;
 }
 
@@ -31,7 +30,6 @@ const MessageSection = ({
   isAutoPlaying,
   playNextUnreadMessage,
   stopAutoplay,
-  onMarkAsRead,
   messageContainerStyle,
 }: MessageSectionProps) => {
   return (
@@ -49,7 +47,6 @@ const MessageSection = ({
           isAutoPlaying={isAutoPlaying}
           playNextUnreadMessage={playNextUnreadMessage}
           stopAutoplay={stopAutoplay}
-          onMarkAsRead={onMarkAsRead}
           styles={{ messageContainer: messageContainerStyle }}
         />
       ))}

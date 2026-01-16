@@ -17,19 +17,20 @@ interface AudioPlaybackState {
   conversations: Conversation[];
   profileId: string | undefined;
   updateMessageReadStatus: ((messageId: string) => void) | undefined;
+  rollbackMessageReadStatus: ((messageId: string) => void) | undefined;
   speakerMode: boolean;
   lastMessageCounts: Record<string, number>;
-  
+
   // Core actions
   setAudioPlayer: (player: AudioPlayer) => void;
   setPlayerStatus: (status: AudioPlayerStatus) => void;
   setCurrentlyPlaying: (conversationId: string | null) => void;
   clearCurrentlyPlaying: () => void;
   updateMessageCount: (conversationId: string, count: number) => void;
-  
+
   // Audio playback actions
   playFromUri: (uri: string, conversationId?: string, audioPlayer?: AudioPlayer, messageId?: string) => Promise<void>;
-  
+
   // Autoplay actions
   handleAutoPlay: (
     conversations: Conversation[],
@@ -37,6 +38,7 @@ interface AudioPlaybackState {
     profileId: string | undefined,
     audioPlayer: AudioPlayer,
     updateMessageReadStatus?: (messageId: string) => void,
+    rollbackMessageReadStatus?: (messageId: string) => void,
     speakerMode?: boolean
   ) => void;
   playNextUnreadMessage: () => void;
@@ -63,6 +65,7 @@ export const useAudioPlaybackStore = create<AudioPlaybackState>((set, get) => ({
   conversations: useAudioAutoplayStore.getState().conversations,
   profileId: useAudioAutoplayStore.getState().profileId,
   updateMessageReadStatus: undefined,
+  rollbackMessageReadStatus: undefined,
   lastMessageCounts: useAudioAutoplayStore.getState().lastMessageCounts,
 
   // Core actions - delegate to core store
@@ -121,16 +124,17 @@ export const useAudioPlaybackStore = create<AudioPlaybackState>((set, get) => ({
   },
 
   // Autoplay actions - delegate to autoplay store
-  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus, speakerMode) => {
-    set({ 
+  handleAutoPlay: (conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus, rollbackMessageReadStatus, speakerMode) => {
+    set({
       conversations,
       profileId,
       updateMessageReadStatus,
+      rollbackMessageReadStatus,
       speakerMode: speakerMode || false,
       autoplayEnabled: autoplay
     });
-    
-    useAudioAutoplayStore.getState().handleAutoPlay(conversations, autoplay, profileId, audioPlayer);
+
+    useAudioAutoplayStore.getState().handleAutoPlay(conversations, autoplay, profileId, audioPlayer, updateMessageReadStatus, rollbackMessageReadStatus);
     useCoreAudioPlaybackStore.getState().setAutoplayEnabled(autoplay);
     useCoreAudioPlaybackStore.getState().setSpeakerMode(speakerMode || false);
   },

@@ -166,7 +166,8 @@ export const useConversationAutoplay = (
         "URI:",
         nextMessage.audioUrl
       );
-      // Small delay to ensure previous message has finished
+      // Delay to ensure previous message has been marked as read AND
+      // Supabase subscription has propagated the isRead update to local state
       setTimeout(() => {
         // Double-check user hasn't interrupted during the delay
         if (!userInterruptedRef.current) {
@@ -178,7 +179,7 @@ export const useConversationAutoplay = (
           );
           setIsAutoPlaying(false);
         }
-      }, 500);
+      }, 800); // Increased from 500ms to 800ms for reliable state propagation
       return;
     }
 
