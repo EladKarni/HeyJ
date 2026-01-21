@@ -16,7 +16,8 @@
       },
       "env": {
         "NODE_ENV": "development"
-      }
+      },
+      "prebuildCommand": "./scripts/eas-prebuild.sh"
     },
     "preview": {
       "distribution": "internal",
@@ -27,7 +28,8 @@
       "ios": {
         "buildConfiguration": "Release",
         "enterpriseProvisioning": "adhoc"
-      }
+      },
+      "prebuildCommand": "./scripts/eas-prebuild.sh"
     },
     "production": {
       "distribution": "store",
@@ -38,13 +40,15 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "environment": "production"
+      "environment": "production",
+      "prebuildCommand": "./scripts/eas-prebuild.sh"
     },
     "simulator": {
       "distribution": "internal",
       "ios": {
         "simulator": true
-      }
+      },
+      "prebuildCommand": "./scripts/eas-prebuild.sh"
     }
   },
   "submit": {
