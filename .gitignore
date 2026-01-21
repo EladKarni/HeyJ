@@ -39,7 +39,6 @@ yarn-error.*
 .env.production
 
 # Firebase
-google-services.json
 
 # typescript
 *.tsbuildinfo
